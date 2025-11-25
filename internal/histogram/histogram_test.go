@@ -272,7 +272,7 @@ func TestNDHistogram_NaNInfHandling(t *testing.T) {
 	data := [][]float64{
 		{0.0, 0.0},
 		{0.5, 0.5},
-		{math.NaN(), 0.7}, // Should be skipped
+		{math.NaN(), 0.7},  // Should be skipped
 		{0.3, math.Inf(1)}, // Should be skipped
 		{1.0, 1.0},
 	}
@@ -316,11 +316,11 @@ func TestNDHistogram_AllNaNInf(t *testing.T) {
 // TestNDHistogram_EdgeValues tests histogram with edge case values
 func TestNDHistogram_EdgeValues(t *testing.T) {
 	data := [][]float64{
-		{0.0, 0.0},      // Minimum values
-		{1.0, 1.0},      // Maximum values
-		{0.5, 0.5},      // Middle values
-		{0.0, 1.0},      // Mixed edges
-		{1.0, 0.0},      // Mixed edges
+		{0.0, 0.0}, // Minimum values
+		{1.0, 1.0}, // Maximum values
+		{0.5, 0.5}, // Middle values
+		{0.0, 1.0}, // Mixed edges
+		{1.0, 0.0}, // Mixed edges
 	}
 	bins := []int{2, 2}
 

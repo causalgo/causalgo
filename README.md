@@ -1,41 +1,97 @@
-# CausalGo: High-Performance Causal Discovery in Go
+# CausalGo: Causal Analysis Library in Go
 
+> **Pure Go implementation of causal discovery algorithms** - SURD + VarSelect
+
+[![GitHub Release](https://img.shields.io/github/v/release/causalgo/causalgo?include_prereleases&style=flat-square&logo=github&color=blue)](https://github.com/causalgo/causalgo/releases/latest)
+[![Go Version](https://img.shields.io/badge/Go-1.25%2B-00ADD8?style=flat-square&logo=go)](https://go.dev/dl/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/causalgo/causalgo.svg)](https://pkg.go.dev/github.com/causalgo/causalgo)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/causalgo/causalgo/actions/workflows/go.yml/badge.svg)](https://github.com/causalgo/causalgo/actions/workflows/go.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/causalgo/causalgo)](https://goreportcard.com/report/github.com/causalgo/causalgo)
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/causalgo/causalgo/go.yml?branch=main&style=flat-square&logo=github-actions&label=CI)](https://github.com/causalgo/causalgo/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/causalgo/causalgo?style=flat-square)](https://goreportcard.com/report/github.com/causalgo/causalgo)
+[![codecov](https://img.shields.io/codecov/c/github/causalgo/causalgo?style=flat-square&logo=codecov)](https://codecov.io/gh/causalgo/causalgo)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/causalgo/causalgo?style=flat-square&logo=github)](https://github.com/causalgo/causalgo/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/causalgo/causalgo?style=flat-square&logo=github)](https://github.com/causalgo/causalgo/issues)
 
-**CausalGo** is a high-performance library for causal discovery in Go. It provides multiple algorithms for inferring causal relationships from observational data.
+---
+
+High-performance library for causal analysis and discovery in Go. Implements information-theoretic SURD algorithm and LASSO-based VarSelect for inferring causal relationships from observational time series data. Validated on real turbulent flow datasets from Nature Communications 2024.
+
+## Features ✨
+
+- 🧠 **SURD Algorithm** - Synergistic-Unique-Redundant Decomposition (97.2% test coverage)
+- 📊 **Information Theory** - Entropy, mutual information, conditional entropy
+- 🎯 **VarSelect** - LASSO-based variable selection for causal ordering
+- 📁 **MATLAB Support** - Native .mat file reading (v5, v7.3 HDF5)
+- 📈 **Visualization** - Publication-quality plots (PNG/SVG/PDF export)
+- ✅ **Validated** - 100% match with Python reference on real turbulence data
+- ⚡ **Fast** - Optimized histograms and entropy calculations
+- 🔧 **Flexible** - Configurable bins, smoothing, thresholds
+- 🧪 **Well-Tested** - Extensive validation on synthetic and real datasets
+- 📦 **Pure Go** - No CGO dependencies, cross-platform
 
 ## Algorithms
 
-| Algorithm | Status | Description |
-|-----------|--------|-------------|
-| **VarSelect** | Implemented | LASSO-based recursive variable selection for causal ordering |
-| **SURD** | In Development | Synergistic-Unique-Redundant Decomposition ([Nature Communications 2024](https://doi.org/10.1038/s41467-024-53373-4)) |
+| Algorithm | Status | Test Coverage | Description |
+|-----------|--------|---------------|-------------|
+| **SURD** | ✅ Implemented | 97.2% | Information-theoretic decomposition ([Nature 2024](https://doi.org/10.1038/s41467-024-53373-4)) |
+| **VarSelect** | ✅ Implemented | ~85% | LASSO-based recursive variable selection |
 
-## Key Features
+## Requirements
 
-- High-performance parallel processing
-- Memory-efficient handling of large datasets
-- Full Gonum integration for scientific computing
-- Plugin architecture for custom regression models
-- Comprehensive tests & benchmarks
+- Go 1.25+
 
-## Installation
+## Installation 📦
 
 ```bash
 go get github.com/causalgo/causalgo
 ```
 
-## Quick Start (VarSelect)
+## Quick Start 🚀
+
+### SURD - Causal Decomposition
 
 ```go
 package main
 
 import (
     "fmt"
-    "log"
+    "github.com/causalgo/causalgo/surd"
+)
+
+func main() {
+    // Time series data: [samples x variables]
+    // First column = target, rest = agents
+    data := [][]float64{
+        {1.0, 0.5, 0.3},  // sample 0
+        {2.0, 1.5, 0.7},  // sample 1
+        {1.5, 1.0, 0.5},  // sample 2
+        // ... more samples
+    }
+
+    // Number of histogram bins for each variable
+    bins := []int{10, 10, 10}
+
+    // Run SURD decomposition
+    result, err := surd.DecomposeFromData(data, bins)
+    if err != nil {
+        panic(err)
+    }
+
+    // Analyze causality components
+    fmt.Printf("Unique causality:      %+v\n", result.Unique)
+    fmt.Printf("Redundant causality:   %+v\n", result.Redundant)
+    fmt.Printf("Synergistic causality: %+v\n", result.Synergistic)
+    fmt.Printf("Information leak:      %.4f\n", result.InfoLeak)
+}
+```
+
+### VarSelect - Causal Ordering
+
+```go
+package main
+
+import (
+    "fmt"
     "math/rand"
 
     "github.com/causalgo/causalgo/internal/varselect"
@@ -52,91 +108,109 @@ func main() {
         data.Set(i, 2, x*0.5+data.At(i, 1)*0.5+rand.Float64()*0.1)
     }
 
-    // Configure algorithm
-    config := varselect.Config{
+    // Configure variable selection
+    selector := varselect.New(varselect.Config{
         Lambda:    0.1,    // LASSO regularization
         Tolerance: 1e-5,   // Convergence threshold
         MaxIter:   1000,   // Maximum iterations
-        Workers:   4,      // Parallel workers
-    }
+    })
 
-    // Run variable selection
-    selector := varselect.New(config)
+    // Discover causal order
     result, err := selector.Fit(data)
     if err != nil {
-        log.Fatalf("Fit error: %v", err)
+        panic(err)
     }
 
     fmt.Println("Causal Order:", result.Order)
-    fmt.Println("Residual Variances:", result.Residuals)
+    fmt.Println("Adjacency Matrix:", result.Adjacency)
 }
 ```
 
-## SURD Algorithm
+## Advanced Usage 🧠
 
-SURD (Synergistic-Unique-Redundant Decomposition) is an information-theoretic approach to causal discovery that decomposes causality into:
-
-- **Redundant (R)**: Common causality shared among multiple variables
-- **Unique (U)**: Causality from one variable that can't be obtained from others
-- **Synergistic (S)**: Causality from joint effect of multiple variables
-- **Information Leak**: Causality from unobserved variables
-
-### Basic Usage
+### Working with MATLAB Data
 
 ```go
 package main
 
 import (
-    "fmt"
+    "github.com/causalgo/causalgo/pkg/matdata"
     "github.com/causalgo/causalgo/surd"
-    "github.com/causalgo/causalgo/pkg/visualization"
 )
 
 func main() {
-    // Your time series data: [samples x variables]
-    // First column is target (Q+), rest are agents
-    data := [][]float64{
-        {1.0, 0.5, 0.3},  // sample 0
-        {2.0, 1.5, 0.7},  // sample 1
-        // ...
-    }
-
-    bins := []int{10, 10, 10}  // Number of bins for each variable
-
-    result, err := surd.DecomposeFromData(data, bins)
+    // Load MATLAB .mat file (v5 or v7.3 HDF5)
+    data, err := matdata.LoadMatrixTransposed("data.mat", "X")
     if err != nil {
         panic(err)
     }
 
-    // Access results
-    fmt.Printf("Unique causality: %+v\n", result.Unique)
-    fmt.Printf("Redundant causality: %+v\n", result.Redundant)
-    fmt.Printf("Synergistic causality: %+v\n", result.Synergistic)
-    fmt.Printf("Information leak: %.4f\n", result.InfoLeak)
+    // Prepare with time lag for causal analysis
+    Y, err := matdata.PrepareWithLag(data, targetIdx=0, lag=10)
+    if err != nil {
+        panic(err)
+    }
 
-    // Visualize results
-    opts := visualization.DefaultPlotOptions()
-    plot, _ := visualization.PlotSURD(result, opts)
-    visualization.SavePNG(plot, "surd_result.png", 10, 6)
+    // Run SURD decomposition
+    bins := make([]int, len(Y[0]))
+    for i := range bins {
+        bins[i] = 10
+    }
+
+    result, _ := surd.DecomposeFromData(Y, bins)
+
+    // Analyze causality...
 }
 ```
 
 ### Visualization
 
-Generate plots from command line:
+```go
+package main
 
-```bash
-# Basic usage (ASCII chart only)
-go run cmd/visualize/main.go --system xor
+import (
+    "github.com/causalgo/causalgo/surd"
+    "github.com/causalgo/causalgo/pkg/visualization"
+)
 
-# With PNG output
-go run cmd/visualize/main.go --system xor --output surd_xor.png
+func main() {
+    // Run SURD decomposition
+    result, _ := surd.DecomposeFromData(data, bins)
 
-# With SVG output
-go run cmd/visualize/main.go --system xor --output surd_xor.svg --format svg
+    // Create plot with custom options
+    opts := visualization.PlotOptions{
+        Title:      "Causal Decomposition",
+        Width:      10.0,  // inches
+        Height:     6.0,
+        Threshold:  0.01,  // Filter small values
+        ShowLeak:   true,
+        ShowLabels: true,
+    }
+
+    plot, _ := visualization.PlotSURD(result, opts)
+
+    // Save to file (auto-detects format from extension)
+    visualization.SavePlot(plot, "results.png", 10, 6)  // PNG
+    visualization.SavePlot(plot, "results.svg", 10, 6)  // SVG
+    visualization.SavePlot(plot, "results.pdf", 10, 6)  // PDF
+}
 ```
 
-See [pkg/visualization/README.md](pkg/visualization/README.md) for detailed visualization documentation.
+### CLI Visualization Tool
+
+```bash
+# Generate XOR synergy example
+go run cmd/visualize/main.go --system xor --output surd_xor.png
+
+# Custom dataset with parameters
+go run cmd/visualize/main.go \
+  --system duplicated \
+  --samples 100000 \
+  --bins 10 \
+  --output redundancy.svg
+```
+
+Available systems: `xor` (synergy), `duplicated` (redundancy), `independent` (unique)
 
 ### Example Plots
 
@@ -148,41 +222,123 @@ See [pkg/visualization/README.md](pkg/visualization/README.md) for detailed visu
 </tr>
 </table>
 
-## System Requirements
+## Package Structure
 
-- **Go 1.24+**
-- Linux/macOS/Windows
-- 4+ CPU cores recommended
+```
+causalgo/
+├── surd/                      # SURD algorithm (97.2% coverage)
+│   ├── surd.go               # Main decomposition API
+│   └── example_test.go       # Usage examples
+├── internal/
+│   ├── entropy/              # Information theory (97.6% coverage)
+│   │   └── entropy.go       # Entropy, MI, conditional MI
+│   ├── histogram/            # N-dimensional histograms (98.7% coverage)
+│   │   └── histogram.go     # NDHistogram with smoothing
+│   ├── varselect/            # Variable selection (~85% coverage)
+│   │   └── varselect.go     # LASSO-based causal ordering
+│   ├── comparison/           # Algorithm comparison tests
+│   └── validation/           # Validation against Python reference
+├── pkg/
+│   ├── matdata/              # MATLAB file reading
+│   │   ├── matdata.go       # Native .mat support (v5, v7.3)
+│   │   └── example_test.go  # Usage examples
+│   └── visualization/        # Plotting (PNG/SVG/PDF)
+│       ├── plot.go          # SURD bar charts
+│       └── export.go        # Multi-format export
+├── cmd/
+│   └── visualize/           # CLI visualization tool
+├── regression/               # LASSO implementations
+│   ├── regression.go        # Regressor interface
+│   └── lasso_external.go    # Adapter for causalgo/lasso
+└── testdata/
+    └── matlab/              # Real turbulence datasets (70+ MB)
+```
 
-## Packages
+## Validation 🧪
 
-- **surd**: SURD algorithm implementation
-- **pkg/visualization**: Plotting and visualization utilities (PNG/SVG/PDF export)
-- **internal/varselect**: Variable selection algorithm
-- **internal/entropy**: Information theory functions (entropy, mutual information)
-- **internal/histogram**: N-dimensional histogram utilities
-- **regression**: Regression interfaces and LASSO implementations
-  - `NewLASSO` — Built-in simple LASSO
-  - `NewExternalLASSO` — Adapter for [CausalGo/lasso](https://github.com/causalgo/lasso) (parallel, full-featured)
+SURD implementation validated against Python reference from [Nature Communications 2024](https://doi.org/10.1038/s41467-024-53373-4):
+
+| Dataset | Samples | Variables | Match | InfoLeak |
+|---------|---------|-----------|-------|----------|
+| Energy Cascade | 21,759 | 5 | ✅ 100% | < 0.01 |
+| Inner-Outer Flow | 2.4M | 2 | ✅ 100% | ~0.997 |
+| XOR (synthetic) | 10,000 | 3 | ✅ 100% | < 0.001 |
+
+Run validation tests:
+```bash
+go test -v ./internal/validation/...
+```
 
 ## Testing
 
 ```bash
+# Run all tests
 go test -v ./...
-go test -bench=. ./...
+
+# Run with race detector
+go test -v -race ./...
+
+# Run with coverage
+go test -coverprofile=coverage.out -covermode=atomic -v ./...
+go tool cover -html=coverage.out
+
+# Run benchmarks
+go test -bench=. -run=^Benchmark ./...
 ```
+
+## Performance
+
+Optimized for both small-scale analysis and large time series:
+
+| Operation | Samples | Time | Memory |
+|-----------|---------|------|--------|
+| SURD (3 vars) | 10,000 | ~1-2 ms | ~5 MB |
+| SURD (5 vars) | 21,759 | ~879 ms | ~50 MB |
+| Inner-Outer (2 vars) | 2.4M | ~95-135 ms | ~200 MB |
+
+## When to Use Each Algorithm
+
+### Use SURD when:
+- System may be **nonlinear**
+- Need to detect **synergy** (joint effects)
+- Need to detect **redundancy** (overlapping information)
+- Have **fewer variables** (<10)
+- Want **information-theoretic decomposition**
+- Time complexity: O(n × 2^p) where p = number of agents
+
+### Use VarSelect when:
+- System is primarily **linear**
+- Need **fast variable screening** (10+ variables)
+- Want **interpretable regression weights**
+- Need **causal ordering**
+- Time complexity: O(n × p²)
+
+### Hybrid Approach:
+1. Use **VarSelect** to screen many variables
+2. Apply **SURD** to top-k variables for detailed analysis
+
+## Documentation
+
+- **Examples**: See [examples in godoc](https://pkg.go.dev/github.com/causalgo/causalgo)
+- **Visualization**: [pkg/visualization/README.md](pkg/visualization/README.md)
+- **MATLAB Integration**: [pkg/matdata/](pkg/matdata/)
+- **Algorithm Comparison**: [internal/comparison/](internal/comparison/)
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Git workflow (feature/bugfix/hotfix branches)
+- Commit message conventions
+- Code quality standards
+- Pull request process
 
-## License
+## Community
 
-MIT License. See [LICENSE](LICENSE) for details.
+- **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- **Security Policy**: [SECURITY.md](SECURITY.md)
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+- **Roadmap**: [ROADMAP.md](ROADMAP.md)
+- **Issues**: [GitHub Issues](https://github.com/causalgo/causalgo/issues)
 
 ## Citation
 
@@ -200,8 +356,16 @@ If using the SURD algorithm, please cite:
 }
 ```
 
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
 ## Contact
 
-Project Maintainer: Andrey Kolkov - a.kolkov@gmail.com
+- **Maintainer**: Andrey Kolkov - a.kolkov@gmail.com
+- **GitHub**: [https://github.com/causalgo/causalgo](https://github.com/causalgo/causalgo)
+- **Issues**: [https://github.com/causalgo/causalgo/issues](https://github.com/causalgo/causalgo/issues)
 
-Project Link: [https://github.com/causalgo/causalgo](https://github.com/causalgo/causalgo)
+---
+
+**Built with ❤️ using Go and Gonum**

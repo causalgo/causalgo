@@ -41,9 +41,9 @@ func TestPlotSURD(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:   "nil result",
-			result: nil,
-			opts:   DefaultPlotOptions(),
+			name:    "nil result",
+			result:  nil,
+			opts:    DefaultPlotOptions(),
 			wantErr: true,
 		},
 		{
@@ -160,11 +160,11 @@ func TestCollectComponents(t *testing.T) {
 
 func TestGenerateCombinations(t *testing.T) {
 	tests := []struct {
-		name     string
-		n        int
-		k        int
-		wantLen  int
-		wantNil  bool
+		name    string
+		n       int
+		k       int
+		wantLen int
+		wantNil bool
 	}{
 		{
 			name:    "C(3,2) = 3",

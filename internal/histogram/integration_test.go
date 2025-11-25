@@ -227,8 +227,8 @@ func TestIntegration_IndependentVariables(t *testing.T) {
 	data := make([][]float64, 100)
 	for i := 0; i < 100; i++ {
 		data[i] = []float64{
-			float64(i%10) / 10.0,           // X0: cycles 0-9
-			float64((i/3)%7) / 7.0,         // X1: different cycle (3 offset, mod 7)
+			float64(i%10) / 10.0,   // X0: cycles 0-9
+			float64((i/3)%7) / 7.0, // X1: different cycle (3 offset, mod 7)
 		}
 	}
 	bins := []int{10, 7}

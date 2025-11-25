@@ -79,7 +79,7 @@ func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 	}
 
 	nvars := len(shape) - 1 // количество агентов
-	ntarget := shape[0]      // количество состояний target
+	ntarget := shape[0]     // количество состояний target
 
 	// Шаг 1: Вычислить утечку информации
 	// info_leak = H(target|agents) / H(target)

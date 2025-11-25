@@ -3,6 +3,7 @@ package varselect
 import (
 	"math"
 	"math/rand"
+	"sync/atomic"
 	"testing"
 
 	"gonum.org/v1/gonum/mat"
@@ -142,7 +143,7 @@ func TestFit(t *testing.T) {
 	data := mat.NewDense(100, 3, nil)
 	for i := 0; i < 100; i++ {
 		data.Set(i, 0, rand.Float64())                                         //nolint:gosec // G404: test data
-		data.Set(i, 1, data.At(i, 0)*0.8+rand.Float64()*0.2)                    //nolint:gosec // G404: test data
+		data.Set(i, 1, data.At(i, 0)*0.8+rand.Float64()*0.2)                   //nolint:gosec // G404: test data
 		data.Set(i, 2, data.At(i, 0)*0.5+data.At(i, 1)*0.5+rand.Float64()*0.1) //nolint:gosec // G404: test data
 	}
 
@@ -223,7 +224,7 @@ func TestFitWithCustomRegressor(t *testing.T) {
 	data := mat.NewDense(100, 3, nil)
 	for i := 0; i < 100; i++ {
 		data.Set(i, 0, rand.Float64())                                         //nolint:gosec // G404: test data
-		data.Set(i, 1, data.At(i, 0)*0.8+rand.Float64()*0.2)                    //nolint:gosec // G404: test data
+		data.Set(i, 1, data.At(i, 0)*0.8+rand.Float64()*0.2)                   //nolint:gosec // G404: test data
 		data.Set(i, 2, data.At(i, 0)*0.5+data.At(i, 1)*0.5+rand.Float64()*0.1) //nolint:gosec // G404: test data
 	}
 
@@ -242,18 +243,18 @@ func TestFitWithCustomRegressor(t *testing.T) {
 		t.Fatalf("Fit error: %v", err)
 	}
 
-	if !mockReg.called {
+	if !mockReg.called.Load() {
 		t.Error("Custom regressor was not called")
 	}
 }
 
 // MockRegressor implements Regressor interface for testing
 type MockRegressor struct {
-	called bool
+	called atomic.Bool
 }
 
 func (m *MockRegressor) Fit(x *mat.Dense, y []float64) []float64 {
-	m.called = true
+	m.called.Store(true)
 	p := 1
 	if x != nil {
 		_, p = x.Dims()

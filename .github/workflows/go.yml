@@ -1,90 +1,144 @@
-name: Go CI
+name: Tests
+
+# Testing Strategy:
+# - Tests run on Linux, macOS, and Windows (cross-platform library)
+# - Go 1.25+ required (matches go.mod requirement)
+# - Causal analysis library (SURD + VarSelect) - must work everywhere
+# - Includes validation tests with real MATLAB data (energy cascade, inner-outer flow)
+#
+# Branch Strategy (Git Flow):
+# - feature/** branches: Development work
+# - bugfix/** branches: Bug fixes
+# - hotfix/** branches: Critical production fixes
+# - release/** branches: Pre-release testing (test here BEFORE merging to main)
+# - develop branch: Integration branch
+# - main branch: Production-ready code only (protected)
+# - Pull requests: Must pass all tests before merge
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'hotfix/**'
+      - 'release/**'
+    tags: [ 'v*' ]
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  # Unit tests - Cross-platform
+  unit-tests:
+    name: Unit Tests - ${{ matrix.os }} - Go ${{ matrix.go-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.25']
+
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.24'
-        id: go-setup
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: true
 
-      - name: Configure Go environment
-        run: |
-          echo "GOROOT=$(go env GOROOT)" >> $GITHUB_ENV
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "PATH=$PATH:$(go env GOPATH)/bin" >> $GITHUB_ENV
+    - name: Download dependencies
+      run: go mod download
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+    - name: Verify dependencies
+      run: go mod verify
 
-      - name: Build
-        run: go build -v ./...
+    - name: Run go vet
+      if: matrix.os == 'ubuntu-latest'
+      run: go vet ./...
 
-      - name: Test
-        run: go test -v ./...
+    - name: Run unit tests with race detector
+      shell: bash
+      run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
-      - name: Run benchmarks
-        run: go test -bench=. -run=^Benchmark ./...
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.25'
+      uses: codecov/codecov-action@v4
+      continue-on-error: true
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: causalgo/causalgo
+        file: ./coverage.txt
+        flags: unittests
+        name: codecov-unit
 
-      - name: Lint
-        uses: golangci/golangci-lint-action@v3
-        env:
-          GOROOT: ${{ env.GOROOT }}
-        with:
-          version: latest
-          skip-build-cache: true
-          skip-pkg-cache: true
-          args: --out-format=colored-line-number --issues-exit-code=0 --tests=false
-
-  coverage:
+  # Lint with golangci-lint
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
+    continue-on-error: false
+
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.24'
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache: true
 
-      - name: Configure Go environment
-        run: |
-          echo "GOROOT=$(go env GOROOT)" >> $GITHUB_ENV
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: latest
+        args: --timeout=5m
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+  # Formatting check
+  formatting:
+    name: Code Formatting
+    runs-on: ubuntu-latest
 
-      - name: Test with coverage
-        run: |
-          go test -coverprofile=coverage.out -covermode=atomic -v ./...
-          go tool cover -html=coverage.out -o coverage.html
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.html
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache: true
+
+    - name: Check formatting
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "ERROR: The following files are not formatted:"
+          gofmt -l .
+          echo ""
+          echo "Run 'go fmt ./...' to fix formatting issues."
+          exit 1
+        fi
+        echo "All files are properly formatted"
+
+  # Benchmarks
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    if: github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache: true
+
+    - name: Run benchmarks
+      run: go test -bench=. -run=^Benchmark -benchmem ./...
