@@ -10,11 +10,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Open source documentation: `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md`, `ROADMAP.md`
-- Community guidelines following Contributor Covenant
+- TBD
 
 ### Changed
 - TBD
+
+---
+
+## [0.3.0] - 2025-11-26
+
+### Added
+- **Open Source Ready**: Repository prepared for public release
+- Open source documentation (1216 lines):
+  - `CODE_OF_CONDUCT.md`: Contributor Covenant v2.1
+  - `CONTRIBUTING.md`: Git Flow workflow, quality standards
+  - `SECURITY.md`: Security considerations for causal analysis libraries
+  - `CHANGELOG.md`: Version history from v0.1.0 to present
+  - `ROADMAP.md`: Development plan to v1.0.0
+- CI/CD infrastructure:
+  - Cross-platform GitHub Actions (Linux, macOS, Windows)
+  - Codecov integration for coverage reporting
+  - golangci-lint automated checks with timeout configuration
+- Pre-release validation:
+  - `scripts/pre-release-check.sh` (386 lines)
+  - Validates: formatting, vet, build, tests, coverage, lint, dependencies, docs
+  - WSL2 Gentoo integration for race detector on Windows
+- Professional README with 9 badges and comprehensive documentation
+  - Features showcase, Quick Start guides
+  - Advanced usage examples (MATLAB, Visualization)
+  - Validation tables for real datasets
+  - Algorithm comparison guide (when to use SURD vs VarSelect)
+
+### Fixed
+- **DATA RACE** in `internal/varselect/varselect_test.go`:
+  - Changed `MockRegressor.called` from `bool` to `atomic.Bool`
+  - Verified with race detector: 0 races detected
+- `.golangci.yml` version configuration (string instead of number)
+- Code formatting across all packages (100% compliant)
+
+### Changed
+- Updated GitHub Actions workflow for Go 1.25+ cross-platform testing
+- Enhanced README with professional structure and badges
+- Improved CI/CD pipeline with comprehensive quality checks
+
+### Removed
+- `BENCHMARKS.md` (outdated)
+- `VISUALIZATION_COMPLETE.md` (internal report)
+- `comparison_results.txt` (temporary file)
+
+### Verification
+- golangci-lint: 0 issues
+- All tests pass with race detector
+- Pre-release validation: passing
+- Code coverage: maintained at target levels
 
 ---
 
