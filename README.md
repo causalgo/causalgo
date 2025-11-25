@@ -1,28 +1,34 @@
 # CausalGo: High-Performance Causal Discovery in Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/CausalGo/causalgo.svg)](https://pkg.go.dev/github.com/CausalGo/causalgo)
+[![Go Reference](https://pkg.go.dev/badge/github.com/causalgo/causalgo.svg)](https://pkg.go.dev/github.com/causalgo/causalgo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/CausalGo/causalgo/actions/workflows/go.yml/badge.svg)](https://github.com/CausalGo/causalgo/actions/workflows/go.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/CausalGo/causalgo)](https://goreportcard.com/report/github.com/CausalGo/causalgo)
+[![CI](https://github.com/causalgo/causalgo/actions/workflows/go.yml/badge.svg)](https://github.com/causalgo/causalgo/actions/workflows/go.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/causalgo/causalgo)](https://goreportcard.com/report/github.com/causalgo/causalgo)
 
-**CausalGo** is a high-performance implementation of the SURD algorithm (Sparse Unbiased Recursive Regression) for causal discovery in datasets. Based on the [research published in Nature Communications](https://www.nature.com/articles/s41467-024-53373-4), it provides 5-10x speedup compared to the original Python implementation.
+**CausalGo** is a high-performance library for causal discovery in Go. It provides multiple algorithms for inferring causal relationships from observational data.
 
-## 🔍 Key Features
+## Algorithms
 
-- 🚀 **Extreme performance** (optimized matrix operations, parallel processing)
-- 📊 **Faithful implementation** of the SURD algorithm from the original paper
-- 💾 **Memory-efficient** handling of large datasets
-- 📈 **Full Gonum integration** for scientific computing in Go
-- 🔌 **Plugin architecture** for custom regression models
-- ✅ **Comprehensive tests & benchmarks** (validated against reference implementation)
+| Algorithm | Status | Description |
+|-----------|--------|-------------|
+| **VarSelect** | Implemented | LASSO-based recursive variable selection for causal ordering |
+| **SURD** | In Development | Synergistic-Unique-Redundant Decomposition ([Nature Communications 2024](https://doi.org/10.1038/s41467-024-53373-4)) |
 
-## ⚙️ Installation
+## Key Features
+
+- High-performance parallel processing
+- Memory-efficient handling of large datasets
+- Full Gonum integration for scientific computing
+- Plugin architecture for custom regression models
+- Comprehensive tests & benchmarks
+
+## Installation
 
 ```bash
-go get github.com/CausalGo/causalgo
+go get github.com/causalgo/causalgo
 ```
 
-## 🚀 Quick Start
+## Quick Start (VarSelect)
 
 ```go
 package main
@@ -31,8 +37,8 @@ import (
     "fmt"
     "log"
     "math/rand"
-    
-    "github.com/CausalGo/causalgo/surd"
+
+    "github.com/causalgo/causalgo/internal/varselect"
     "gonum.org/v1/gonum/mat"
 )
 
@@ -45,150 +51,157 @@ func main() {
         data.Set(i, 1, x*0.8+rand.Float64()*0.2)
         data.Set(i, 2, x*0.5+data.At(i, 1)*0.5+rand.Float64()*0.1)
     }
-    
+
     // Configure algorithm
-    config := surd.Config{
+    config := varselect.Config{
         Lambda:    0.1,    // LASSO regularization
         Tolerance: 1e-5,   // Convergence threshold
         MaxIter:   1000,   // Maximum iterations
-        Workers:   4,      // Use 4 CPU cores
+        Workers:   4,      // Parallel workers
     }
-    
-    // Initialize and run SURD
-    model := surd.New(config)
-    result, err := model.Fit(data)
+
+    // Run variable selection
+    selector := varselect.New(config)
+    result, err := selector.Fit(data)
     if err != nil {
         log.Fatalf("Fit error: %v", err)
     }
-    
-    // Display results
+
     fmt.Println("Causal Order:", result.Order)
     fmt.Println("Residual Variances:", result.Residuals)
-    fmt.Println("Adjacency Matrix:")
-    for _, row := range result.Adjacency {
-        fmt.Println(row)
-    }
 }
 ```
 
-### System Requirements
-- **Go 1.24+** (recommended for best performance)
-- Linux/macOS/Windows
-- 4+ CPU cores for optimal performance
+## SURD Algorithm
 
-## 🧩 Architecture Overview
+SURD (Synergistic-Unique-Redundant Decomposition) is an information-theoretic approach to causal discovery that decomposes causality into:
 
-```mermaid
-graph TD
-    A[SURD Algorithm] --> B[Data Standardization]
-    A --> C[Recursive Processing]
-    C --> D[Worker Pool]
-    D --> E[Regression Model]
-    E -->|Default| F[LASSO]
-    E -->|Custom| G[User Implementation]
-    A --> H[Graph Construction]
-```
+- **Redundant (R)**: Common causality shared among multiple variables
+- **Unique (U)**: Causality from one variable that can't be obtained from others
+- **Synergistic (S)**: Causality from joint effect of multiple variables
+- **Information Leak**: Causality from unobserved variables
 
-## 🔌 Using Custom Regression Models
-
-Implement the `Regressor` interface and inject into SURD:
+### Basic Usage
 
 ```go
 package main
 
 import (
-    "github.com/CausalGo/causalgo/regression"
-    "gonum.org/v1/gonum/mat"
+    "fmt"
+    "github.com/causalgo/causalgo/surd"
+    "github.com/causalgo/causalgo/pkg/visualization"
 )
 
-type CustomRegressor struct{}
-
-// Fit implements the Regressor interface
-func (r *CustomRegressor) Fit(X *mat.Dense, y []float64) []float64 {
-    // Your custom regression implementation
-    weights := make([]float64, X.RawMatrix().Cols)
-    // ... training logic ...
-    return weights
-}
-
 func main() {
-    // ... setup data ...
-    
-    model := surd.New(surd.Config{Workers: 4})
-    model.SetRegressor(&CustomRegressor{})
-    
-    result, err := model.Fit(data)
-    // ... handle results ...
+    // Your time series data: [samples x variables]
+    // First column is target (Q+), rest are agents
+    data := [][]float64{
+        {1.0, 0.5, 0.3},  // sample 0
+        {2.0, 1.5, 0.7},  // sample 1
+        // ...
+    }
+
+    bins := []int{10, 10, 10}  // Number of bins for each variable
+
+    result, err := surd.DecomposeFromData(data, bins)
+    if err != nil {
+        panic(err)
+    }
+
+    // Access results
+    fmt.Printf("Unique causality: %+v\n", result.Unique)
+    fmt.Printf("Redundant causality: %+v\n", result.Redundant)
+    fmt.Printf("Synergistic causality: %+v\n", result.Synergistic)
+    fmt.Printf("Information leak: %.4f\n", result.InfoLeak)
+
+    // Visualize results
+    opts := visualization.DefaultPlotOptions()
+    plot, _ := visualization.PlotSURD(result, opts)
+    visualization.SavePNG(plot, "surd_result.png", 10, 6)
 }
 ```
 
-## 🧪 Testing
+### Visualization
 
-Run unit tests:
+Generate plots from command line:
+
+```bash
+# Basic usage (ASCII chart only)
+go run cmd/visualize/main.go --system xor
+
+# With PNG output
+go run cmd/visualize/main.go --system xor --output surd_xor.png
+
+# With SVG output
+go run cmd/visualize/main.go --system xor --output surd_xor.svg --format svg
+```
+
+See [pkg/visualization/README.md](pkg/visualization/README.md) for detailed visualization documentation.
+
+### Example Plots
+
+<table>
+<tr>
+<td><img src="docs/images/surd_redundant.png" width="250"/><br/><b>Redundancy</b> (Duplicated Input)</td>
+<td><img src="docs/images/surd_unique.png" width="250"/><br/><b>Unique</b> (Independent Inputs)</td>
+<td><img src="docs/images/surd_synergy.png" width="250"/><br/><b>Synergy</b> (XOR System)</td>
+</tr>
+</table>
+
+## System Requirements
+
+- **Go 1.24+**
+- Linux/macOS/Windows
+- 4+ CPU cores recommended
+
+## Packages
+
+- **surd**: SURD algorithm implementation
+- **pkg/visualization**: Plotting and visualization utilities (PNG/SVG/PDF export)
+- **internal/varselect**: Variable selection algorithm
+- **internal/entropy**: Information theory functions (entropy, mutual information)
+- **internal/histogram**: N-dimensional histogram utilities
+- **regression**: Regression interfaces and LASSO implementations
+  - `NewLASSO` — Built-in simple LASSO
+  - `NewExternalLASSO` — Adapter for [CausalGo/lasso](https://github.com/causalgo/lasso) (parallel, full-featured)
+
+## Testing
+
 ```bash
 go test -v ./...
-```
-
-Run benchmarks:
-```bash
 go test -bench=. ./...
 ```
 
-## 📊 Performance Benchmarks
-
-Benchmarks on Intel i9-12900K (32GB RAM):
-
-| Dataset Size | Variables | Samples | Time/Op (ms) | Throughput |
-|--------------|-----------|---------|--------------|------------|
-| Small        | 10        | 100     | 12.5         | 80 op/s    |
-| Medium       | 50        | 1000    | 185          | 5.4 op/s   |
-| Large        | 100       | 5000    | 2,450        | 0.41 op/s  |
-
-[Detailed benchmarks](BENCHMARKS.md)
-
-## 📚 Documentation & Packages
-
-Full documentation available at [pkg.go.dev](https://pkg.go.dev/github.com/CausalGo/causalgo).
-
-### Core Packages:
-- **surd**: Main SURD implementation (`New()`, `Fit()`, `Config`)
-- **regression**: Regression interfaces and implementations
-    - `Regressor` interface
-    - `LASSO` implementation
-- **graph**: Causal graph results (`GraphResult`)
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature`)
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
 5. Create a Pull Request
 
-## 📜 License
+## License
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for details.
+MIT License. See [LICENSE](LICENSE) for details.
 
-## 📝 Citation
+## Citation
 
-If you use CausalGo in your research, please cite the original SURD paper:
+If using the SURD algorithm, please cite:
 
 ```bibtex
-@article{liu2024sparse,
-  title={Sparse unbiased recursive regression for causal discovery},
-  author={Liu, Weiyu and Cai, Ruichu and Hao, Zhen and Zhang, Kun},
+@article{martinez2024decomposing,
+  title={Decomposing causality into its synergistic, unique, and redundant components},
+  author={Mart{\'\i}nez-S{\'a}nchez, {\'A}lvaro and Arranz, Gonzalo and Lozano-Dur{\'a}n, Adri{\'a}n},
   journal={Nature Communications},
   volume={15},
-  pages={1-15},
-  year={2024}
+  pages={9296},
+  year={2024},
+  doi={10.1038/s41467-024-53373-4}
 }
 ```
 
-## ✉️ Contact
+## Contact
 
-Project Maintainer: [Andrey Kolkov] - a.kolkov@gmail.com
+Project Maintainer: Andrey Kolkov - a.kolkov@gmail.com
 
-Project Link: [https://github.com/CausalGo/causalgo](https://github.com/CausalGo/causalgo)
-
----
-**CausalGo** - Unlocking causality at incredible speed! 🔓🚀
+Project Link: [https://github.com/causalgo/causalgo](https://github.com/causalgo/causalgo)

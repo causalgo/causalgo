@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/CausalGo/causalgo/surd"
+
+	"github.com/causalgo/causalgo/internal/varselect"
 	"gonum.org/v1/gonum/mat"
 )
 
 func main() {
-	// Test with small dataset
+	// Example: Variable selection using LASSO-based causal ordering
 	data := []float64{
 		1, 2, 3,
 		4, 5, 6,
@@ -15,19 +16,19 @@ func main() {
 	}
 	X := mat.NewDense(3, 3, data)
 
-	config := surd.Config{
+	config := varselect.Config{
 		Lambda:    0.1,
 		Tolerance: 1e-6,
 		MaxIter:   1000,
 		Workers:   4,
 	}
 
-	model := surd.New(config)
-	result, err := model.Fit(X)
+	selector := varselect.New(config)
+	result, err := selector.Fit(X)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Order:", result.Order)
+	fmt.Println("Causal Order:", result.Order)
 	fmt.Println("Residuals:", result.Residuals)
 }

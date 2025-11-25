@@ -1,3 +1,4 @@
+version: 2
 run:
   timeout: 5m
 
@@ -9,4 +10,3 @@ linters:
     - gosec
     - bodyclose
     - gocritic
-    - gofmt

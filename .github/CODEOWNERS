@@ -1,0 +1,55 @@
+# CODEOWNERS for CausalGo
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# This file defines individuals or teams responsible for code in this repository.
+# Code owners are automatically requested for review when someone opens a pull request
+# that modifies code they own.
+
+# Default owner for everything in the repo
+* @kolkov
+
+# Core SURD algorithm - Information-theoretic causal decomposition
+/surd/ @kolkov
+
+# Internal packages - Core functionality
+/internal/entropy/ @kolkov
+/internal/histogram/ @kolkov
+/internal/varselect/ @kolkov
+/internal/validation/ @kolkov
+/internal/comparison/ @kolkov
+
+# Public packages - User-facing APIs
+/pkg/matdata/ @kolkov
+/pkg/visualization/ @kolkov
+
+# Regression models - LASSO implementation
+/regression/ @kolkov
+
+# Command-line utilities and examples
+/cmd/ @kolkov
+/examples/ @kolkov
+
+# Test data and scripts
+/testdata/ @kolkov
+/scripts/ @kolkov
+
+# Documentation - Keep up to date with code changes
+*.md @kolkov
+/docs/ @kolkov
+
+# Claude Code configuration
+/.claude/ @kolkov
+
+# GitHub configuration and CI/CD
+/.github/ @kolkov
+
+# Code quality and linting configuration
+/.golangci.yml @kolkov
+/Makefile @kolkov
+
+# Tests - Ensure coverage and reliability
+*_test.go @kolkov
+
+# Go module files - Dependency management
+/go.mod @kolkov
+/go.sum @kolkov

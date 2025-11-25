@@ -28,5 +28,18 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+
+# AI tools
+.claude/
+.gode/
+.goco/
+
+# Private dev documentation
+docs/dev/
+
+# Test data (large CSV files)
+testdata/*.csv
+
+tmp/
