@@ -113,12 +113,12 @@ type DirectionResult struct {
 //   - config: algorithm configuration
 //
 // Returns Result containing SURD decomposition plus directional metadata.
-func Decompose(Y []float64, X [][]float64, config Config) (*Result, error) {
+func Decompose(Y []float64, X [][]float64, config Config) (*Result, error) { //nolint:gocritic // Y/X are standard mathematical notation
 	if len(Y) == 0 {
-		return nil, fmt.Errorf("Y is empty")
+		return nil, fmt.Errorf("target variable Y is empty")
 	}
 	if len(X) == 0 {
-		return nil, fmt.Errorf("X is empty")
+		return nil, fmt.Errorf("predictor matrix X is empty")
 	}
 
 	n := len(Y)
@@ -127,7 +127,7 @@ func Decompose(Y []float64, X [][]float64, config Config) (*Result, error) {
 	// Validate dimensions
 	for i, xi := range X {
 		if len(xi) != n {
-			return nil, fmt.Errorf("X[%d] has %d samples, expected %d", i, len(xi), n)
+			return nil, fmt.Errorf("predictor X[%d] has %d samples, expected %d", i, len(xi), n)
 		}
 	}
 
@@ -198,7 +198,7 @@ func Decompose(Y []float64, X [][]float64, config Config) (*Result, error) {
 //   - X: source variable values
 //   - method: direction estimation method
 //   - config: algorithm configuration
-func ComputeDirection(Y, X []float64, method DirectionMethod, config Config) DirectionResult {
+func ComputeDirection(Y, X []float64, method DirectionMethod, config Config) DirectionResult { //nolint:gocritic // Y/X are standard mathematical notation
 	if len(Y) != len(X) {
 		return DirectionResult{Valid: false, Reason: "Y and X have different lengths"}
 	}
@@ -219,7 +219,7 @@ func ComputeDirection(Y, X []float64, method DirectionMethod, config Config) Dir
 //
 // This is the most robust method, comparing Y values when X is in the high quartile
 // vs. low quartile. The direction is normalized by standard deviation for comparability.
-func computeQuartileDirection(Y, X []float64, config Config) DirectionResult {
+func computeQuartileDirection(Y, X []float64, config Config) DirectionResult { //nolint:gocritic // Y/X are standard mathematical notation
 	n := len(Y)
 	if n < 4*config.MinSamplesPerQuartile {
 		return DirectionResult{
@@ -285,7 +285,7 @@ func computeQuartileDirection(Y, X []float64, config Config) DirectionResult {
 }
 
 // computeMedianSplitDirection estimates direction using median split.
-func computeMedianSplitDirection(Y, X []float64, config Config) DirectionResult {
+func computeMedianSplitDirection(Y, X []float64, config Config) DirectionResult { //nolint:gocritic // Y/X are standard mathematical notation
 	n := len(Y)
 	if n < 2*config.MinSamplesPerQuartile {
 		return DirectionResult{
@@ -340,7 +340,7 @@ func computeMedianSplitDirection(Y, X []float64, config Config) DirectionResult 
 
 // computeGradientDirection estimates direction using local gradient.
 // This method is better for smooth continuous relationships.
-func computeGradientDirection(Y, X []float64, config Config) DirectionResult {
+func computeGradientDirection(Y, X []float64, config Config) DirectionResult { //nolint:gocritic // Y/X are standard mathematical notation
 	n := len(Y)
 	if n < 10 {
 		return DirectionResult{Valid: false, Reason: "insufficient samples for gradient"}
@@ -404,7 +404,7 @@ func aggregateDirections(directions ...float64) float64 {
 }
 
 // bootstrapConfidence estimates confidence intervals via bootstrap resampling.
-func bootstrapConfidence(Y []float64, X [][]float64, config Config) map[string]float64 {
+func bootstrapConfidence(Y []float64, X [][]float64, config Config) map[string]float64 { //nolint:gocritic // Y/X are standard mathematical notation
 	// TODO: Implement bootstrap confidence estimation
 	// This would resample (Y, X) with replacement, recompute directions,
 	// and estimate confidence from the distribution of bootstrap estimates.
@@ -413,7 +413,7 @@ func bootstrapConfidence(Y []float64, X [][]float64, config Config) map[string]f
 
 // formatDataForSURD converts Y and X into the format expected by SURD.
 // SURD expects [samples x variables] where first column is target.
-func formatDataForSURD(Y []float64, X [][]float64) [][]float64 {
+func formatDataForSURD(Y []float64, X [][]float64) [][]float64 { //nolint:gocritic // Y/X are standard mathematical notation
 	n := len(Y)
 	p := len(X)
 

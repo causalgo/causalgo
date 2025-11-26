@@ -11,7 +11,7 @@ import (
 func TestComputeDirections_PositiveLinear(t *testing.T) {
 	// Generate Y = 2*X + noise
 	n := 1000
-	rng := rand.New(rand.NewSource(42))
+	rng := rand.New(rand.NewSource(42)) //nolint:gosec // deterministic for testing
 
 	X := make([]float64, n)
 	Y := make([]float64, n)
@@ -42,7 +42,7 @@ func TestComputeDirections_PositiveLinear(t *testing.T) {
 func TestComputeDirections_NegativeLinear(t *testing.T) {
 	// Generate Y = -3*X + 30 + noise
 	n := 1000
-	rng := rand.New(rand.NewSource(43))
+	rng := rand.New(rand.NewSource(43)) //nolint:gosec // deterministic for testing
 
 	X := make([]float64, n)
 	Y := make([]float64, n)
@@ -73,7 +73,7 @@ func TestComputeDirections_NegativeLinear(t *testing.T) {
 func TestComputeDirections_NoEffect(t *testing.T) {
 	// Generate Y independent of X
 	n := 1000
-	rng := rand.New(rand.NewSource(44))
+	rng := rand.New(rand.NewSource(44)) //nolint:gosec // deterministic for testing
 
 	X := make([]float64, n)
 	Y := make([]float64, n)
@@ -103,7 +103,7 @@ func TestComputeDirections_NoEffect(t *testing.T) {
 func TestComputeDirections_UShapedRelationship(t *testing.T) {
 	// Generate Y = (X - 5)^2 + noise (U-shaped)
 	n := 1000
-	rng := rand.New(rand.NewSource(45))
+	rng := rand.New(rand.NewSource(45)) //nolint:gosec // deterministic for testing
 
 	X := make([]float64, n)
 	Y := make([]float64, n)
@@ -111,7 +111,7 @@ func TestComputeDirections_UShapedRelationship(t *testing.T) {
 	for i := 0; i < n; i++ {
 		X[i] = rng.Float64() * 10 // X in [0, 10]
 		noise := rng.NormFloat64() * 0.5
-		Y[i] = math.Pow(X[i]-5.0, 2) + noise // U-shaped
+		Y[i] = (X[i]-5.0)*(X[i]-5.0) + noise // U-shaped
 	}
 
 	config := DefaultConfig()
@@ -195,7 +195,7 @@ func TestComputeConflict_MixedDirections(t *testing.T) {
 // TestMedianSplitMethod tests the median split direction method.
 func TestMedianSplitMethod(t *testing.T) {
 	n := 1000
-	rng := rand.New(rand.NewSource(46))
+	rng := rand.New(rand.NewSource(46)) //nolint:gosec // deterministic for testing
 
 	X := make([]float64, n)
 	Y := make([]float64, n)
@@ -223,7 +223,7 @@ func TestMedianSplitMethod(t *testing.T) {
 // TestGradientMethod tests the gradient-based direction method.
 func TestGradientMethod(t *testing.T) {
 	n := 500
-	rng := rand.New(rand.NewSource(47))
+	rng := rand.New(rand.NewSource(47)) //nolint:gosec // deterministic for testing
 
 	X := make([]float64, n)
 	Y := make([]float64, n)
@@ -306,7 +306,7 @@ func TestStatisticalHelpers(t *testing.T) {
 func TestMAD(t *testing.T) {
 	// For normal distribution, MAD * 1.4826 should approximate stddev
 	n := 10000
-	rng := rand.New(rand.NewSource(48))
+	rng := rand.New(rand.NewSource(48)) //nolint:gosec // deterministic for testing
 
 	data := make([]float64, n)
 	for i := 0; i < n; i++ {
@@ -380,7 +380,7 @@ func TestClamp(t *testing.T) {
 // BenchmarkComputeDirection benchmarks direction computation.
 func BenchmarkComputeDirection(b *testing.B) {
 	n := 10000
-	rng := rand.New(rand.NewSource(99))
+	rng := rand.New(rand.NewSource(99)) //nolint:gosec // deterministic for testing
 
 	X := make([]float64, n)
 	Y := make([]float64, n)
@@ -402,7 +402,7 @@ func BenchmarkComputeDirection(b *testing.B) {
 func BenchmarkComputeConflicts(b *testing.B) {
 	numVars := 10
 	directions := make(map[string]float64)
-	rng := rand.New(rand.NewSource(100))
+	rng := rand.New(rand.NewSource(100)) //nolint:gosec // deterministic for testing
 
 	for i := 0; i < numVars; i++ {
 		directions[string(rune('0'+i))] = rng.Float64()*2 - 1
