@@ -1,0 +1,45 @@
+CausalGo
+Copyright (c) 2025 Andrey Kolkov
+
+This product includes software developed by Andrey Kolkov (https://github.com/kolkov).
+
+================================================================================
+
+THIRD-PARTY DEPENDENCIES
+
+This software uses the following third-party libraries:
+
+1. Gonum (gonum.org/v1/gonum)
+   Copyright (c) 2013 The Gonum Authors
+   License: BSD 3-Clause License
+   https://github.com/gonum/gonum/blob/master/LICENSE
+
+2. Go Standard Library (golang.org/x/sync)
+   Copyright (c) 2009 The Go Authors
+   License: BSD 3-Clause License
+   https://golang.org/licenses/BSD-3-Clause
+
+================================================================================
+
+ACADEMIC ATTRIBUTIONS
+
+The SURD (Signed-Unique-Redundant Decomposition) algorithm is based on:
+
+"Quantifying high-order synergistic and redundant information decomposition
+in neural spiking data"
+Authors: Pica, G., Piasini, E., Chicharro, D., & Panzeri, S.
+Published in: Nature Communications, vol. 15, Article number: 8553 (2024)
+DOI: https://doi.org/10.1038/s41467-024-53373-4
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Reference implementation: https://github.com/panzerilab/SURD
+
+================================================================================
+
+The SCIC (Signed Causal Information Components) algorithm is an original
+contribution by Andrey Kolkov, developed using AI-powered development tools.
+
+================================================================================
+
+For the full text of the MIT License, see the LICENSE file.
+For a list of contributors, see the AUTHORS file.

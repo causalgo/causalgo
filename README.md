@@ -1,6 +1,6 @@
 # CausalGo: Causal Analysis Library in Go
 
-> **Pure Go implementation of causal discovery algorithms** - SURD + VarSelect
+> **Pure Go implementation of causal discovery algorithms** - SCIC, SURD, VarSelect
 
 [![GitHub Release](https://img.shields.io/github/v/release/causalgo/causalgo?include_prereleases&style=flat-square&logo=github&color=blue)](https://github.com/causalgo/causalgo/releases/latest)
 [![Go Version](https://img.shields.io/badge/Go-1.25%2B-00ADD8?style=flat-square&logo=go)](https://go.dev/dl/)
@@ -14,13 +14,14 @@
 
 ---
 
-High-performance library for causal analysis and discovery in Go. Implements information-theoretic SURD algorithm and LASSO-based VarSelect for inferring causal relationships from observational time series data. Validated on real turbulent flow datasets from Nature Communications 2024.
+High-performance library for causal analysis and discovery in Go. Implements original **SCIC** (Signed Causal Information Components) algorithm for directional causality, information-theoretic **SURD** algorithm, and LASSO-based **VarSelect** for inferring causal relationships from observational time series data. Validated on real turbulent flow datasets from Nature Communications 2024.
 
 ## Features ✨
 
+- 🎯 **SCIC Algorithm** - Signed Causal Information Components for directional causality (94.6% test coverage)
 - 🧠 **SURD Algorithm** - Synergistic-Unique-Redundant Decomposition (97.2% test coverage)
 - 📊 **Information Theory** - Entropy, mutual information, conditional entropy
-- 🎯 **VarSelect** - LASSO-based variable selection for causal ordering
+- 🔍 **VarSelect** - LASSO-based variable selection for causal ordering
 - 📁 **MATLAB Support** - Native .mat file reading (v5, v7.3 HDF5)
 - 📈 **Visualization** - Publication-quality plots (PNG/SVG/PDF export)
 - ✅ **Validated** - 100% match with Python reference on real turbulence data
@@ -33,6 +34,7 @@ High-performance library for causal analysis and discovery in Go. Implements inf
 
 | Algorithm | Status | Test Coverage | Description |
 |-----------|--------|---------------|-------------|
+| **SCIC** | ✅ Implemented | 94.6% | Signed Causal Information Components (original contribution) |
 | **SURD** | ✅ Implemented | 97.2% | Information-theoretic decomposition ([Nature 2024](https://doi.org/10.1038/s41467-024-53373-4)) |
 | **VarSelect** | ✅ Implemented | ~85% | LASSO-based recursive variable selection |
 
@@ -47,6 +49,50 @@ go get github.com/causalgo/causalgo
 ```
 
 ## Quick Start 🚀
+
+### SCIC - Directional Causality Analysis
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/causalgo/causalgo/internal/scic"
+)
+
+func main() {
+    // Time series data: [samples x variables]
+    // First column = target, rest = agents
+    data := [][]float64{
+        {1.0, 0.5, 0.3},  // sample 0
+        {2.0, 1.5, 0.7},  // sample 1
+        {1.5, 1.0, 0.5},  // sample 2
+        // ... more samples
+    }
+
+    // Number of histogram bins for each variable
+    bins := []int{10, 10, 10}
+
+    // Configure SCIC analysis
+    cfg := scic.Config{
+        DirectionalityMethod: scic.QuartileMethod,  // or MedianSplitMethod, GradientMethod
+        NumBootstrap:        100,                   // Bootstrap samples for confidence
+        BootstrapSeed:       42,                    // Random seed
+    }
+
+    // Run SCIC analysis
+    result, err := scic.AnalyzeFromData(data, bins, cfg)
+    if err != nil {
+        panic(err)
+    }
+
+    // Analyze directional causality
+    fmt.Printf("Positive causality:   %+v\n", result.Positive)    // Target increases when agent increases
+    fmt.Printf("Negative causality:   %+v\n", result.Negative)    // Target decreases when agent increases
+    fmt.Printf("Sign stability:       %+v\n", result.SignStability) // Bootstrap confidence (0-1)
+    fmt.Printf("Conflicts detected:   %+v\n", result.Conflicts)   // Conflicting directionality
+}
+```
 
 ### SURD - Causal Decomposition
 
@@ -230,6 +276,9 @@ causalgo/
 │   ├── surd.go               # Main decomposition API
 │   └── example_test.go       # Usage examples
 ├── internal/
+│   ├── scic/                 # SCIC algorithm (94.6% coverage)
+│   │   ├── scic.go          # Directional causality analysis
+│   │   └── example_test.go  # Usage examples
 │   ├── entropy/              # Information theory (97.6% coverage)
 │   │   └── entropy.go       # Entropy, MI, conditional MI
 │   ├── histogram/            # N-dimensional histograms (98.7% coverage)
@@ -256,6 +305,20 @@ causalgo/
 
 ## Validation 🧪
 
+### SCIC Validation
+
+SCIC algorithm validated on canonical systems and real-world datasets:
+
+| Dataset | Samples | Variables | Directionality | Sign Stability |
+|---------|---------|-----------|----------------|----------------|
+| XOR System | 100,000 | 3 | ✅ Correct | > 0.95 |
+| Duplicated Input | 100,000 | 3 | ✅ Correct | > 0.95 |
+| Inhibitor System | 100,000 | 3 | ✅ Correct | > 0.95 |
+| U-Shaped | 100,000 | 3 | ✅ Correct | > 0.90 |
+| Energy Cascade | 21,759 | 5 | ✅ Correct | > 0.85 |
+
+### SURD Validation
+
 SURD implementation validated against Python reference from [Nature Communications 2024](https://doi.org/10.1038/s41467-024-53373-4):
 
 | Dataset | Samples | Variables | Match | InfoLeak |
@@ -266,7 +329,8 @@ SURD implementation validated against Python reference from [Nature Communicatio
 
 Run validation tests:
 ```bash
-go test -v ./internal/validation/...
+go test -v ./internal/validation/...  # SURD validation
+go test -v ./internal/scic/...        # SCIC validation
 ```
 
 ## Testing
@@ -298,6 +362,14 @@ Optimized for both small-scale analysis and large time series:
 
 ## When to Use Each Algorithm
 
+### Use SCIC when:
+- Need **directional causality** (positive/negative effects)
+- Working with **complex nonlinear systems**
+- Need **confidence estimates** (bootstrap sign stability)
+- Want to detect **conflicting relationships**
+- Care about **magnitude AND direction** of causal effects
+- Time complexity: O(n × p × B) where B = bootstrap samples
+
 ### Use SURD when:
 - System may be **nonlinear**
 - Need to detect **synergy** (joint effects)
@@ -315,7 +387,8 @@ Optimized for both small-scale analysis and large time series:
 
 ### Hybrid Approach:
 1. Use **VarSelect** to screen many variables
-2. Apply **SURD** to top-k variables for detailed analysis
+2. Apply **SCIC** for directional analysis of top-k variables
+3. Use **SURD** for synergy/redundancy decomposition if needed
 
 ## Documentation
 
