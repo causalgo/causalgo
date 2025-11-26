@@ -30,6 +30,48 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
 
 ---
 
+## Contributor License Agreement (CLA)
+
+### Why We Require a CLA
+
+To protect the intellectual property of the CausalGo project and enable commercialization under the **GRPMSoft Ltd.** platform, all contributors must sign a **Contributor License Agreement (CLA)** before their first contribution is merged.
+
+### What the CLA Means
+
+By signing the CLA, you:
+
+1. **Grant a License**: You grant the project maintainer (Andrey Kolkov, or GRPMSoft Ltd. after incorporation) a perpetual, worldwide, non-exclusive, royalty-free license to use, modify, and distribute your contributions under the MIT License.
+
+2. **Retain Your Copyright**: You still own the copyright to your code and can use it elsewhere under compatible licenses.
+
+3. **Certify Originality**: You confirm that you wrote the code or have the legal right to contribute it.
+
+4. **Transfer Commercial Rights**: You agree that commercial rights to your contributions transfer to the project maintainer for use in GRPMSoft Ltd. commercial products and services.
+
+### How to Sign the CLA
+
+**Before your first pull request is merged**, you must sign the CLA:
+
+1. **Download CLA template**: [docs/legal/CLA.md](docs/legal/CLA.md) *(to be created)*
+2. **Fill in your information** (name, email, GitHub username)
+3. **Email signed CLA to**: a.kolkov@gmail.com with subject "CausalGo CLA - [Your Name]"
+4. **Wait for confirmation** before your PR can be merged
+
+**Note**: We are working on an automated CLA bot (CLA Assistant). Until then, manual signing is required.
+
+### CLA FAQ
+
+**Q: Can I contribute without signing the CLA?**
+A: No. All contributions require CLA signature for IP protection.
+
+**Q: What if I'm contributing on behalf of my company?**
+A: Your company must sign a **Corporate CLA** instead. Contact a.kolkov@gmail.com for the template.
+
+**Q: Does this affect my ability to use CausalGo in my projects?**
+A: No. CausalGo remains MIT-licensed and free to use. The CLA only affects commercial rights for GRPMSoft products.
+
+---
+
 ## Getting Started
 
 ### Prerequisites

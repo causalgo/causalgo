@@ -1,0 +1,51 @@
+# CausalGo Authors
+
+This file lists the contributors to the CausalGo project.
+
+## Lead Developer & Copyright Holder
+
+**Andrey Kolkov** <a.kolkov@gmail.com>
+- SCIC Algorithm (Signed Causal Information Components)
+- VarSelect implementation & optimization
+- SURD validation on real-world data
+- Project architecture & infrastructure
+- Born ML integration planning
+
+GitHub: https://github.com/kolkov
+Portfolio: https://github.com/kolkov (Angular libraries, HDF5, Born ML)
+
+## AI-Assisted Development
+
+This project was developed using AI-powered development tools to accelerate
+research, implementation, and validation:
+
+- Algorithm design and mathematical formalization
+- Code generation and optimization
+- Comprehensive testing and validation
+- Documentation and technical writing
+- Research analysis and business strategy
+
+## Future Contributors
+
+If you wish to contribute to CausalGo, please:
+
+1. Read CONTRIBUTING.md for guidelines
+2. Sign the Contributor License Agreement (CLA)
+3. Submit a pull request
+
+All contributions must be licensed under the MIT License.
+All contributors must agree that copyright of their contributions
+transfers to the project maintainer (Andrey Kolkov, or GRPMSoft Ltd. after incorporation).
+
+## Acknowledgments
+
+- **SURD Algorithm**: Based on the paper "Quantifying high-order synergistic and redundant
+  information decomposition in neural spiking data" (Nature Communications, 2024)
+- **scigolib/hdf5**: HDF5 library for Go (Andrey Kolkov)
+- **born-ml/born**: ML framework (Andrey Kolkov portfolio)
+- **Gonum**: Numerical computing library for Go
+- **Community**: All users who provide feedback and bug reports
+
+---
+
+*Last updated: 2025-11-26*

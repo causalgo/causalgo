@@ -17,6 +17,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] - 2025-11-26
+
+### Added
+- **SCIC Algorithm** (Signed Causal Information Components) — 94.6% test coverage
+  - Original contribution for directional causality analysis
+  - Three directionality methods: Quartile, MedianSplit, Gradient
+  - Bootstrap confidence estimation (sign stability)
+  - Conflict detection between variables
+  - Validated on canonical systems (XOR, Duplicated, Inhibitor, U-Shaped, Conflicting)
+  - Validated on real-world data (energy cascade turbulence dataset)
+  - Complete testable examples in `internal/scic/example_test.go`
+- Foundation for commercialization:
+  - MIT License with updated copyright holder (Andrey Kolkov)
+  - AUTHORS file with lead developer and AI-assisted development attribution
+  - NOTICE file with third-party dependencies and academic attributions
+  - Contributor License Agreement (CLA) in CONTRIBUTING.md
+  - Updated ROADMAP.md with SCIC and corrected timelines (Q1 2026 - Q1 2027)
+
+### Changed
+- README.md: Added SCIC to features, algorithms table, Quick Start examples, and package structure
+- GitHub repository description: Added SCIC mention and new topics (scic, information-theory, causal-discovery, algorithms)
+
+---
+
 ## [0.3.0] - 2025-11-26
 
 ### Added
@@ -206,8 +230,7 @@ See [ROADMAP.md](ROADMAP.md) for future plans toward v1.0.0.
 
 ---
 
-[Unreleased]: https://github.com/causalgo/causalgo/compare/v0.5.0-alpha...HEAD
-[0.5.0-alpha]: https://github.com/causalgo/causalgo/compare/v0.4.0...v0.5.0-alpha
+[Unreleased]: https://github.com/causalgo/causalgo/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/causalgo/causalgo/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/causalgo/causalgo/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/causalgo/causalgo/compare/v0.1.0...v0.2.0

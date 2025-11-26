@@ -7,7 +7,9 @@ This document outlines the development roadmap for CausalGo from current alpha s
 ## Vision
 
 **CausalGo aims to be the definitive Go library for causal analysis**, providing:
-- **Information-theoretic methods** (SURD) for nonlinear causal discovery
+- **Information-theoretic methods**:
+  - **SURD** for nonlinear causal discovery (Synergistic-Unique-Redundant Decomposition)
+  - **SCIC** for directional causality analysis (Signed Causal Information Components) - NEW in v0.6.0
 - **Regression-based methods** (VarSelect) for linear causal inference
 - **High performance**: Handle 100K+ samples efficiently
 - **Production-ready**: Robust error handling, comprehensive testing, excellent documentation
@@ -15,11 +17,18 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## Current Status (v0.5.0-alpha)
+## Current Status (v0.4.0)
 
-**Released**: January 2025
+**Released**: v0.3.0 (November 2025)
+**Latest**: v0.4.0 (November 2025) - SCIC algorithm complete
 
 ### ✅ Completed
+- **SCIC algorithm** (NEW in v0.4.0) - 94.6% test coverage
+  - 3 directionality methods (Quartile, MedianSplit, Gradient)
+  - Bootstrap confidence estimation (sign stability)
+  - Conflict detection between variables
+  - Validated on canonical systems (XOR, Duplicated, Inhibitor, U-Shaped, Conflicting)
+  - Validated on real-world data (energy cascade turbulence dataset)
 - Full SURD implementation (97.2% test coverage)
 - VarSelect LASSO-based algorithm (~85% coverage)
 - Information theory primitives (entropy, MI, CMI)
@@ -29,6 +38,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 - Real-world data validation (turbulence datasets)
 - Testable examples following Go best practices
 - Open source documentation (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY)
+- **Licensing**: MIT License confirmed with CLA for IP protection
 
 ### 🔧 Known Limitations
 - Performance not optimized for very large systems (>100K samples, >10 variables)
@@ -38,11 +48,11 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v0.6.0 - Performance & Scalability (Target: Q1 2025)
+## v0.5.0 - Performance & Optimization (Target: Q1 2026)
 
 ### Goals
 - Optimize SURD for large-scale systems
-- Improve VarSelect robustness
+- Improve VarSelect robustness and test coverage
 - Add parallel processing capabilities
 
 ### Features
@@ -81,7 +91,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v0.7.0 - Visualization & Interpretation (Target: Q2 2025)
+## v0.6.0 - Visualization & Interpretation (Target: Q2 2026)
 
 ### Goals
 - Make causal analysis results interpretable
@@ -115,7 +125,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v0.8.0 - Advanced Algorithms (Target: Q3 2025)
+## v0.7.0 - Advanced Algorithms (Target: Q3 2026)
 
 ### Goals
 - Extend causal discovery capabilities
@@ -155,7 +165,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v0.9.0 - Production Readiness (Target: Q4 2025)
+## v0.8.0 - Production Readiness (Target: Q4 2026)
 
 ### Goals
 - Harden library for production use
@@ -200,7 +210,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v1.0.0 - Stable Release (Target: 2026 Q1)
+## v1.0.0 - Stable Release (Target: Q1 2027)
 
 ### Goals
 - Production-ready causal analysis library
@@ -221,7 +231,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v1.x - Post-1.0 Enhancements (2026+)
+## v1.x - Post-1.0 Enhancements (2027+)
 
 ### Potential Features (Community-Driven)
 
@@ -305,5 +315,5 @@ Track progress on [GitHub Projects](https://github.com/causalgo/causalgo/project
 
 ---
 
-**Last Updated**: January 2025
+**Last Updated**: November 2025
 **Status**: Living document — updated quarterly
