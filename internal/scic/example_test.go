@@ -18,7 +18,7 @@ func ExampleDecompose() {
 	// Configure SCIC with quartile-based direction estimation
 	config := scic.Config{
 		Bins:            []int{5, 5},
-		DirectionMethod: "quartile",
+		DirectionMethod: scic.QuartileMethod,
 		RobustStats:     true,
 	}
 
@@ -32,26 +32,6 @@ func ExampleDecompose() {
 	// Display directional information for first variable
 	fmt.Printf("Direction: %.2f\n", result.Directions["0"])
 	// Output: Direction: 1.00
-}
-
-// ExampleComputeDirections shows how to compute directional influences
-// for multiple variables with different methods.
-func ExampleComputeDirections() {
-	// Dataset with positive and negative relationships
-	Y := []float64{5.0, 4.0, 3.0, 2.0, 1.0}
-	X := [][]float64{
-		{1.0, 2.0, 3.0, 4.0, 5.0},  // X0: negative relationship
-		{2.0, 4.0, 6.0, 8.0, 10.0}, // X1: negative relationship
-	}
-
-	// Compute directions using quartile method
-	directions := scic.ComputeDirections(Y, X, "quartile")
-
-	fmt.Printf("Variable 0 direction: %.2f\n", directions["0"])
-	fmt.Printf("Variable 1 direction: %.2f\n", directions["1"])
-	// Output:
-	// Variable 0 direction: -1.00
-	// Variable 1 direction: -1.00
 }
 
 // ExampleComputeConflicts demonstrates conflict detection between
