@@ -1,6 +1,6 @@
-# CausalGo: Causal Analysis Library in Go
+# CausalGo™: Causal Analysis Library in Go
 
-> **Pure Go implementation of causal discovery algorithms** - SCIC, SURD, VarSelect
+> **Pure Go implementation of causal discovery algorithms** - SCIC™, SURD, VarSelect
 
 [![GitHub Release](https://img.shields.io/github/v/release/causalgo/causalgo?include_prereleases&style=flat-square&logo=github&color=blue)](https://github.com/causalgo/causalgo/releases/latest)
 [![Go Version](https://img.shields.io/badge/Go-1.25%2B-00ADD8?style=flat-square&logo=go)](https://go.dev/dl/)
@@ -14,11 +14,11 @@
 
 ---
 
-High-performance library for causal analysis and discovery in Go. Implements original **SCIC** (Signed Causal Information Components) algorithm for directional causality, information-theoretic **SURD** algorithm, and LASSO-based **VarSelect** for inferring causal relationships from observational time series data. Validated on real turbulent flow datasets from Nature Communications 2024.
+High-performance library for causal analysis and discovery in Go. Implements original **SCIC™** (Signed Causal Information Components) algorithm for directional causality, information-theoretic **SURD** algorithm, and LASSO-based **VarSelect** for inferring causal relationships from observational time series data. Validated on real turbulent flow datasets from Nature Communications 2024.
 
 ## Features ✨
 
-- 🎯 **SCIC Algorithm** - Signed Causal Information Components for directional causality (94.6% test coverage)
+- 🎯 **SCIC™ Algorithm** - Signed Causal Information Components for directional causality (94.6% test coverage)
 - 🧠 **SURD Algorithm** - Synergistic-Unique-Redundant Decomposition (97.2% test coverage)
 - 📊 **Information Theory** - Entropy, mutual information, conditional entropy
 - 🔍 **VarSelect** - LASSO-based variable selection for causal ordering
@@ -34,7 +34,7 @@ High-performance library for causal analysis and discovery in Go. Implements ori
 
 | Algorithm | Status | Test Coverage | Description |
 |-----------|--------|---------------|-------------|
-| **SCIC** | ✅ Implemented | 94.6% | Signed Causal Information Components (original contribution) |
+| **SCIC™** | ✅ Implemented | 94.6% | Signed Causal Information Components (original contribution) |
 | **SURD** | ✅ Implemented | 97.2% | Information-theoretic decomposition ([Nature 2024](https://doi.org/10.1038/s41467-024-53373-4)) |
 | **VarSelect** | ✅ Implemented | ~85% | LASSO-based recursive variable selection |
 
@@ -50,7 +50,7 @@ go get github.com/causalgo/causalgo
 
 ## Quick Start 🚀
 
-### SCIC - Directional Causality Analysis
+### SCIC™ - Directional Causality Analysis
 
 ```go
 package main
@@ -305,9 +305,9 @@ causalgo/
 
 ## Validation 🧪
 
-### SCIC Validation
+### SCIC™ Validation
 
-SCIC algorithm validated on canonical systems and real-world datasets:
+SCIC™ algorithm validated on canonical systems and real-world datasets:
 
 | Dataset | Samples | Variables | Directionality | Sign Stability |
 |---------|---------|-----------|----------------|----------------|
@@ -362,7 +362,7 @@ Optimized for both small-scale analysis and large time series:
 
 ## When to Use Each Algorithm
 
-### Use SCIC when:
+### Use SCIC™ when:
 - Need **directional causality** (positive/negative effects)
 - Working with **complex nonlinear systems**
 - Need **confidence estimates** (bootstrap sign stability)
@@ -387,7 +387,7 @@ Optimized for both small-scale analysis and large time series:
 
 ### Hybrid Approach:
 1. Use **VarSelect** to screen many variables
-2. Apply **SCIC** for directional analysis of top-k variables
+2. Apply **SCIC™** for directional analysis of top-k variables
 3. Use **SURD** for synergy/redundancy decomposition if needed
 
 ## Documentation
