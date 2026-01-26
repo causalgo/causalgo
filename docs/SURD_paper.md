@@ -74,14 +74,14 @@ A central aspect of causality is the concept of **physical influence**: manipula
 
 ### Three Building Blocks of Causal Interactions
 
-1. **Mediator variables (A → B → C)**: B acts as a bridge transmitting the influence of A to C.
-   - Example: ↑ education level → ↑ job skills → ↑ income
+1. **Mediator variables** (`A → B → C`): `B` acts as a bridge transmitting the influence of `A` to `C`.
+   - Example: `↑ education level → ↑ job skills → ↑ income`
 
-2. **Confounding variables (A ← B → C)**: B acts as the common cause for A and C, creating statistical correlation even without direct causal link.
-   - Example: air pollution → ↑ deforestation AND air pollution → ↑ respiratory conditions
+2. **Confounding variables** (`A ← B → C`): `B` acts as the common cause for `A` and `C`, creating statistical correlation even without direct causal link.
+   - Example: `air pollution → ↑ deforestation` AND `air pollution → ↑ respiratory conditions`
 
-3. **Collider variables (A → B ← C)**: Multiple factors acting on the same variable.
-   - **Redundant causes**: Both A and C contribute to the same effect
+3. **Collider variables** (`A → B ← C`): Multiple factors acting on the same variable.
+   - **Redundant causes**: Both `A` and `C` contribute to the same effect
    - **Synergistic causes**: Combined effect surpasses individual effects
 
 ---
@@ -90,13 +90,13 @@ A central aspect of causality is the concept of **physical influence**: manipula
 
 ### Theoretical Background
 
-Consider the collection of N time-dependent variables given by the vector:
+Consider the collection of `N` time-dependent variables given by the vector:
 
 ```
 Q = [Q₁(t), Q₂(t), …, Qₙ(t)]
 ```
 
-The objective is to quantify the causality from the components of **Q** to the future of the target variable Qⱼ, denoted by:
+The objective is to quantify the causality from the components of `Q` to the future of the target variable `Qⱼ`, denoted by:
 
 ```
 Q⁺ⱼ = Qⱼ(t + ΔT), where ΔT > 0
@@ -104,9 +104,9 @@ Q⁺ⱼ = Qⱼ(t + ΔT), where ΔT > 0
 
 ### The SURD Decomposition
 
-SURD quantifies causality as the increase in information (ΔI) about Q⁺ⱼ obtained from observing individual components or groups of components from **Q**.
+SURD quantifies causality as the increase in information (`ΔI`) about `Q⁺ⱼ` obtained from observing individual components or groups of components from `Q`.
 
-Using the principle of forward-in-time propagation of information, the Shannon entropy H(Q⁺ⱼ) can be decomposed as the sum of all causal contributions from the past and present:
+Using the principle of forward-in-time propagation of information, the Shannon entropy `H(Q⁺ⱼ)` can be decomposed as the sum of all causal contributions from the past and present:
 
 **Equation (1) — Fundamental SURD Decomposition:**
 ```
@@ -115,7 +115,7 @@ H(Q⁺ⱼ) = Σ ΔIᴿᵢ→ⱼ + Σ ΔIᵁᵢ→ⱼ + Σ ΔIˢᵢ→ⱼ + ΔI�
         i∈C       i=1       i∈C
 ```
 
-For **N = 2** variables, Equation (1) reduces to:
+For `N = 2` variables, Equation (1) reduces to:
 ```
 H(Q⁺ⱼ) = ΔIᴿ₁₂→ⱼ + ΔIᵁ₁→ⱼ + ΔIᵁ₂→ⱼ + ΔIˢ₁₂→ⱼ + ΔIₗₑₐₖ→ⱼ
 ```
@@ -131,10 +131,10 @@ H(Q⁺ⱼ) = ΔIᴿ₁₂→ⱼ + ΔIᵁ₁→ⱼ + ΔIᵁ₂→ⱼ + ΔIˢ₁�
 
 ### Key Properties of SURD
 
-1. **Non-negativity**: All terms ΔIᴿ, ΔIᵁ, ΔIˢ ≥ 0
-2. **Conservation**: Sum of R + U + S equals mutual information I(Q⁺ⱼ; Q)
-3. **Consistency**: I(Q⁺ⱼ; Qᵢ) = sum of unique and redundant causalities involving Qᵢ
-4. **Bounded leak**: Causality leak ∈ [0, 1]
+1. **Non-negativity**: All terms `ΔIᴿ`, `ΔIᵁ`, `ΔIˢ` ≥ 0
+2. **Conservation**: Sum of `R + U + S` equals mutual information `I(Q⁺ⱼ; Q)`
+3. **Consistency**: `I(Q⁺ⱼ; Qᵢ)` = sum of unique and redundant causalities involving `Qᵢ`
+4. **Bounded leak**: Causality leak ∈ `[0, 1]`
 5. **Nonlinear**: Captures nonlinear dependencies via information-theoretic formulation
 6. **Stochastic**: Handles deterministic and stochastic interactions
 7. **Self-causation**: Accounts for self-induced causality
@@ -143,33 +143,33 @@ H(Q⁺ⱼ) = ΔIᴿ₁₂→ⱼ + ΔIᵁ₁→ⱼ + ΔIᵁ₂→ⱼ + ΔIˢ₁�
 
 SURD provides natural normalization based on Equation (1):
 
-- **R, U, S causalities** normalized by I(Q⁺ⱼ; Q) → sum equals 1
-- **Causality leak** normalized by H(Q⁺ⱼ) → bounded [0, 1]
-  - Leak = 0: All causality accounted for by Q
-  - Leak = 1: None of the causality accounted for by Q
+- **R, U, S causalities** normalized by `I(Q⁺ⱼ; Q)` → sum equals 1
+- **Causality leak** normalized by `H(Q⁺ⱼ)` → bounded `[0, 1]`
+  - `Leak = 0`: All causality accounted for by `Q`
+  - `Leak = 1`: None of the causality accounted for by `Q`
 
 ---
 
 ## Validation Examples (Figure 1c)
 
-Three canonical systems demonstrating R/U/S decomposition:
+Three canonical systems demonstrating `R/U/S` decomposition:
 
 ### Example 1: Duplicated Input (Redundancy)
-- **System**: Q₃⁺ depends on Q₁ and Q₂, where Q₂ ≡ Q₁ (identical variables)
-- **Diagram**: Q₁ ∥ Q₂ → Q₃⁺ (with external noise W)
-- **Result**: R₁₂ ≈ 100%, U₁ ≈ 0%, U₂ ≈ 0%, S₁₂ ≈ 0%
+- **System**: `Q₃⁺` depends on `Q₁` and `Q₂`, where `Q₂ ≡ Q₁` (identical variables)
+- **Diagram**: `Q₁ ∥ Q₂ → Q₃⁺` (with external noise `W`)
+- **Result**: `R₁₂ ≈ 100%`, `U₁ ≈ 0%`, `U₂ ≈ 0%`, `S₁₂ ≈ 0%`
 - **Interpretation**: All information is redundant since both inputs are identical
 
 ### Example 2: Independent Input (Unique)
-- **System**: Q₃⁺ = Q₁ (only Q₁ influences target)
-- **Diagram**: Q₁ → Q₃⁺, Q₂ independent (with external noise W)
-- **Result**: R₁₂ ≈ 0%, U₁ ≈ 100%, U₂ ≈ 0%, S₁₂ ≈ 0%
-- **Interpretation**: Only unique causality from Q₁
+- **System**: `Q₃⁺ = Q₁` (only `Q₁` influences target)
+- **Diagram**: `Q₁ → Q₃⁺`, `Q₂` independent (with external noise `W`)
+- **Result**: `R₁₂ ≈ 0%`, `U₁ ≈ 100%`, `U₂ ≈ 0%`, `S₁₂ ≈ 0%`
+- **Interpretation**: Only unique causality from `Q₁`
 
 ### Example 3: Exclusive-OR (Synergy)
-- **System**: Q₃⁺ = Q₁ ⊕ Q₂ (XOR gate)
-- **Diagram**: Q₁ ⊕ Q₂ → Q₃⁺ (with external noise W)
-- **Result**: R₁₂ ≈ 0%, U₁ ≈ 0%, U₂ ≈ 0%, S₁₂ ≈ 100%
+- **System**: `Q₃⁺ = Q₁ ⊕ Q₂` (XOR gate)
+- **Diagram**: `Q₁ ⊕ Q₂ → Q₃⁺` (with external noise `W`)
+- **Result**: `R₁₂ ≈ 0%`, `U₁ ≈ 0%`, `U₂ ≈ 0%`, `S₁₂ ≈ 100%`
 - **Interpretation**: Pure synergistic causality - neither input alone provides information about output
 
 ---
@@ -232,10 +232,10 @@ Three canonical systems demonstrating R/U/S decomposition:
 
 ### 1. Energy Cascade in Turbulence
 
-Data from high-fidelity simulation of isotropic turbulence (10⁹ degrees of freedom).
+Data from high-fidelity simulation of isotropic turbulence (`10⁹` degrees of freedom).
 
 **Key findings:**
-- Unique causalities capture forward energy cascade (large → small scales)
+- Unique causalities capture forward energy cascade (`large → small` scales)
 - No unique causality from smaller to larger scales
 - Backward cascade arises only through redundant relationships
 - Supports Taylor's dissipation surrogate assumption
@@ -243,13 +243,13 @@ Data from high-fidelity simulation of isotropic turbulence (10⁹ degrees of fre
 
 ### 2. Turbulent Boundary Layer (Experimental)
 
-Data from University of Melbourne wind tunnel (Re_τ = 14,750).
+Data from University of Melbourne wind tunnel (`Re_τ = 14,750`).
 
 **Key findings:**
 - Inner layer motions predominantly influenced by unique causality from outer layer
 - Supports **top-down interactions** (Townsend's outer-layer similarity hypothesis)
 - No bottom-up causality detected
-- 99% causality leak (expected due to millions of neglected degrees of freedom)
+- `99%` causality leak (expected due to millions of neglected degrees of freedom)
 
 ---
 
@@ -275,7 +275,7 @@ I(Q⁺ⱼ; Q) = Σ p(q⁺ⱼ, q) log₂[p(q⁺ⱼ, q) / (p(q⁺ⱼ)p(q))]
 ĩ(q⁺ⱼ; Q) = Σ_q [p(q⁺ⱼ, q)/p(q⁺ⱼ)] log₂[p(q⁺ⱼ, q) / (p(q⁺ⱼ)p(q))] ≥ 0
 ```
 
-The decomposition is performed for all possible values q⁺ⱼ, then:
+The decomposition is performed for all possible values `q⁺ⱼ`, then:
 ```
 ΔIᴿᵢ→ⱼ = Σ_{q⁺ⱼ} p(q⁺ⱼ) Δĩᴿᵢ(q⁺ⱼ)
 ΔIᵁᵢ→ⱼ = Σ_{q⁺ⱼ} p(q⁺ⱼ) Δĩᵁᵢ(q⁺ⱼ)
@@ -288,11 +288,11 @@ The decomposition is performed for all possible values q⁺ⱼ, then:
 
 ### Advantages of SURD
 
-1. **Distinguishes R/U/S causalities** - lacking in previous methods
+1. **Distinguishes `R/U/S` causalities** - lacking in previous methods
 2. **Causality leak** - quantifies unaccounted causality from hidden variables
 3. **Natural normalization** - sum equals 1, bounded values
 4. **Invariant to transformations** - shifting, rescaling, invertible transformations
-5. **Robust with scarce samples** - consistent with < 1000 samples
+5. **Robust with scarce samples** - consistent with `< 1000` samples
 6. **Noise-tolerant** - reliable even with stochastic noise
 
 ### Key Contributions
