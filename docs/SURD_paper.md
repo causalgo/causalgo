@@ -20,6 +20,8 @@ Here, we address these challenges with **SURD: Synergistic-Unique-Redundant Deco
 
 ## Notation
 
+<div class="notranslate" translate="no">
+
 | Symbol | Description |
 |--------|-------------|
 | **Q** | Vector of N time-dependent observed variables [Q₁(t), Q₂(t), …, Qₙ(t)] |
@@ -35,9 +37,13 @@ Here, we address these challenges with **SURD: Synergistic-Unique-Redundant Deco
 | ΔT | Time increment (lag) |
 | R12, U1, U2, S12 | Shorthand notation for [ΔIᴿ₁₂→₃, ΔIᵁ₁→₃, ΔIᵁ₂→₃, ΔIˢ₁₂→₃] |
 
+</div>
+
 ---
 
 ## Abbreviations
+
+<div class="notranslate" translate="no">
 
 | Abbreviation | Full Name |
 |--------------|-----------|
@@ -50,6 +56,8 @@ Here, we address these challenges with **SURD: Synergistic-Unique-Redundant Deco
 | **TE** | Transfer Entropy |
 | **MI** | Mutual Information |
 | **CMI** | Conditional Mutual Information |
+
+</div>
 
 ---
 
@@ -121,12 +129,17 @@ H(Q⁺ⱼ) = ΔIᴿ₁₂→ⱼ + ΔIᵁ₁→ⱼ + ΔIᵁ₂→ⱼ + ΔIˢ₁�
 ```
 
 **Components:**
+
+<div class="notranslate" translate="no">
+
 | Symbol | Name | Description |
 |--------|------|-------------|
 | ΔIᴿᵢ→ⱼ | Redundant | Common causality shared among all components of Qᵢ |
 | ΔIᵁᵢ→ⱼ | Unique | Causality from Qᵢ not obtainable from any other variable |
 | ΔIˢᵢ→ⱼ | Synergistic | Joint effect of variables in Qᵢ exceeding individual effects |
 | ΔIₗₑₐₖ→ⱼ | Leak | Effect from unobserved variables not in Q |
+
+</div>
 
 ### Key Properties of SURD
 
@@ -177,6 +190,8 @@ Three canonical systems demonstrating R/U/S decomposition:
 
 ### Methods Overview
 
+<div class="notranslate" translate="no">
+
 | Method | Year | Approach | Key Reference |
 |--------|------|----------|---------------|
 | **CGC** | 1984 | Linear autoregressive models, measures forecast error reduction | Geweke (1984) |
@@ -185,7 +200,11 @@ Three canonical systems demonstrating R/U/S decomposition:
 | **PCMCI** | 2019 | Conditional independence tests, optimal parent selection | Runge et al. (2019) |
 | **SURD** | 2024 | Information decomposition into R/U/S components | This paper |
 
+</div>
+
 ### Table 1: Performance Summary
+
+<div class="notranslate" translate="no">
 
 | Case | CGC | CTE | CCM | PCMCI | SURD |
 |------|-----|-----|-----|-------|------|
@@ -207,11 +226,15 @@ Three canonical systems demonstrating R/U/S decomposition:
 | Uncoupled Rössler–Lorenz system | ✗ | ✓ | ✗ | ✓ | ✓ |
 | One-way coupled Rössler–Lorenz system | ✗ | ✓ | ✓ | ✓ᵃ | ✓ |
 
+</div>
+
 ᵃ Causality detected is consistent but causal strength is weak
 ᵇ Causalities detected but method cannot discern synergistic vs unique
 ᶜ Method cannot detect duplicated variables and redundant causalities
 
 ### Table 2: Method Capabilities
+
+<div class="notranslate" translate="no">
 
 | Method | Multi-variate | Non-linear | Stochastic | Contemporaneous | Leak | Time-delay | Self-causation |
 |--------|--------------|------------|------------|-----------------|------|------------|----------------|
@@ -220,6 +243,8 @@ Three canonical systems demonstrating R/U/S decomposition:
 | CCM | ✗ | ✓ | ✗ᵃ | ✓ | ✗ | ✗ᵇ | ✗ |
 | PCMCI | ✓ | ✓ | ✓ | ✗ᶜ | ✗ | ✓ | ✓ |
 | **SURD** | **✓** | **✓** | **✓** | **✓** | **✓** | **✓** | **✓** |
+
+</div>
 
 ᵃ CCM aims to reconstruct attractor manifold; increased dynamical noise complicates reconstruction
 ᵇ Extended CCM introduces time-delayed causal interactions
