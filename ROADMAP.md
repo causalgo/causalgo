@@ -9,7 +9,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 **CausalGo aims to be the definitive Go library for causal analysis**, providing:
 - **Information-theoretic methods**:
   - **SURD** for nonlinear causal discovery (Synergistic-Unique-Redundant Decomposition)
-  - **SCIC** for directional causality analysis (Signed Causal Information Components) - NEW in v0.6.0
+  - **SCIC™** for directional causality analysis (Signed Causal Information Components)
 - **Regression-based methods** (VarSelect) for linear causal inference
 - **High performance**: Handle 100K+ samples efficiently
 - **Production-ready**: Robust error handling, comprehensive testing, excellent documentation
@@ -17,38 +17,47 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## Current Status (v0.4.0)
+## Current Status (v0.5.0)
 
-**Released**: v0.3.0 (November 2025)
-**Latest**: v0.4.0 (November 2025) - SCIC algorithm complete
+**Released**: v0.5.0 (January 2026)
+**Previous**: v0.4.0 (November 2025) - SCIC algorithm complete
 
-### ✅ Completed
-- **SCIC algorithm** (NEW in v0.4.0) - 94.6% test coverage
+### ✅ Completed in v0.5.0
+- **Package Restructuring** (Go 2025 best practices, gonum-style):
+  - `scic/` — public API (was `internal/scic/`)
+  - `varselect/` — public API (was `internal/varselect/`)
+  - `matdata/` — public API (was `pkg/matdata/`)
+  - `visualization/` — public API (was `pkg/visualization/`)
+  - Removed `pkg/` directory entirely
+- **16 Professional SCIC Examples** with testable output
+- **SURD Paper Reference** in markdown (`docs/SURD_paper.md`)
+- **SURD Implementation Verification Report**
+- **Updated Dependencies** (gonum v0.17.0, etc.)
+
+### ✅ Completed in v0.4.0
+- **SCIC algorithm** - 94.6% test coverage
   - 3 directionality methods (Quartile, MedianSplit, Gradient)
   - Bootstrap confidence estimation (sign stability)
   - Conflict detection between variables
   - Validated on canonical systems (XOR, Duplicated, Inhibitor, U-Shaped, Conflicting)
-  - Validated on real-world data (energy cascade turbulence dataset)
 - Full SURD implementation (97.2% test coverage)
 - VarSelect LASSO-based algorithm (~85% coverage)
 - Information theory primitives (entropy, MI, CMI)
 - N-dimensional histogram construction with smoothing
 - MATLAB file I/O (v5, v7.3/HDF5)
-- Validation against Python reference (100% match on canonical examples)
-- Real-world data validation (turbulence datasets)
-- Testable examples following Go best practices
+- Visualization module (PNG/SVG/PDF export)
+- Validation against Python reference (100% match)
 - Open source documentation (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY)
-- **Licensing**: MIT License confirmed with CLA for IP protection
+- **Licensing**: MIT License with CLA for IP protection
 
 ### 🔧 Known Limitations
 - Performance not optimized for very large systems (>100K samples, >10 variables)
-- No visualization module (planned)
 - Limited multivariate SURD (currently 2-3 agents tested, scales to N theoretically)
 - VarSelect test coverage needs improvement (target: 90%+)
 
 ---
 
-## v0.5.0 - Performance & Optimization (Target: Q1 2026)
+## v0.6.0 - Performance & Optimization (Target: Q2 2026)
 
 ### Goals
 - Optimize SURD for large-scale systems
@@ -91,29 +100,27 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v0.6.0 - Visualization & Interpretation (Target: Q2 2026)
+## v0.7.0 - Interactive Tools & Documentation (Target: Q3 2026)
 
 ### Goals
-- Make causal analysis results interpretable
-- Provide visual tools for exploratory analysis
+- Make causal analysis results more interpretable
 - Enhance documentation with interactive examples
+- Improve developer experience
 
 ### Features
 
-#### Visualization Module (`pkg/visualization/`)
-- [ ] **SURD Result Visualization**
+#### Visualization Enhancements (`visualization/`)
+- [x] **SURD Result Visualization** ✅ (completed v0.4.0)
   - Bar charts for R/U/S components
+  - Export to PNG, SVG, PDF
+- [ ] **Advanced Visualizations**
   - Heatmaps for pairwise causality
   - Network graphs for causal relationships
-  - Export to PNG, SVG, HTML
+  - Interactive HTML export
 - [ ] **VarSelect Causal Graphs**
   - Directed acyclic graph (DAG) rendering
   - Edge weights visualization
   - Adjacency matrix heatmaps
-- [ ] **Data Exploration Tools**
-  - Time series plotting
-  - Histogram inspection
-  - Correlation matrices
 
 #### Interactive Documentation
 - [ ] **Jupyter Notebook Integration** (via `gophernotes`)
@@ -125,7 +132,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v0.7.0 - Advanced Algorithms (Target: Q3 2026)
+## v0.8.0 - Advanced Algorithms (Target: Q4 2026)
 
 ### Goals
 - Extend causal discovery capabilities
@@ -165,7 +172,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v0.8.0 - Production Readiness (Target: Q4 2026)
+## v0.9.0 - Production Readiness (Target: Q1 2027)
 
 ### Goals
 - Harden library for production use
@@ -210,7 +217,7 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## v1.0.0 - Stable Release (Target: Q1 2027)
+## v1.0.0 - Stable Release (Target: Q2 2027)
 
 ### Goals
 - Production-ready causal analysis library
@@ -315,5 +322,5 @@ Track progress on [GitHub Projects](https://github.com/causalgo/causalgo/project
 
 ---
 
-**Last Updated**: November 2025
+**Last Updated**: January 2026
 **Status**: Living document — updated quarterly

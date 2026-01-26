@@ -18,8 +18,8 @@ import (
 	"path/filepath"
 
 	"github.com/causalgo/causalgo/internal/validation"
-	"github.com/causalgo/causalgo/pkg/visualization"
 	"github.com/causalgo/causalgo/surd"
+	"github.com/causalgo/causalgo/visualization"
 )
 
 const (

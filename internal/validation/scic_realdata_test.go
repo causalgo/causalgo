@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/causalgo/causalgo/internal/scic"
-	"github.com/causalgo/causalgo/pkg/matdata"
+	"github.com/causalgo/causalgo/matdata"
+	"github.com/causalgo/causalgo/scic"
 )
 
 // TestSCIC_EnergyCascade validates SCIC implementation on real-world turbulent

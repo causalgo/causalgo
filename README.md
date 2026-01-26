@@ -57,40 +57,46 @@ package main
 
 import (
     "fmt"
-    "github.com/causalgo/causalgo/internal/scic"
+    "math/rand"
+
+    "github.com/causalgo/causalgo/scic"
 )
 
 func main() {
-    // Time series data: [samples x variables]
-    // First column = target, rest = agents
-    data := [][]float64{
-        {1.0, 0.5, 0.3},  // sample 0
-        {2.0, 1.5, 0.7},  // sample 1
-        {1.5, 1.0, 0.5},  // sample 2
-        // ... more samples
+    // Generate sample data: Y = 2*X1 - 3*X2 + noise
+    n := 1000
+    rng := rand.New(rand.NewSource(42))
+
+    Y := make([]float64, n)
+    X := make([][]float64, 2)
+    X[0] = make([]float64, n) // X1: facilitative effect
+    X[1] = make([]float64, n) // X2: inhibitory effect
+
+    for i := 0; i < n; i++ {
+        x1, x2 := rng.Float64()*10, rng.Float64()*10
+        X[0][i], X[1][i] = x1, x2
+        Y[i] = 2*x1 - 3*x2 + rng.NormFloat64()*0.5
     }
 
-    // Number of histogram bins for each variable
-    bins := []int{10, 10, 10}
+    // Configure and run SCIC analysis
+    config := scic.DefaultConfig()
+    config.BootstrapN = 100 // Enable bootstrap confidence
 
-    // Configure SCIC analysis
-    cfg := scic.Config{
-        DirectionalityMethod: scic.QuartileMethod,  // or MedianSplitMethod, GradientMethod
-        NumBootstrap:        100,                   // Bootstrap samples for confidence
-        BootstrapSeed:       42,                    // Random seed
-    }
-
-    // Run SCIC analysis
-    result, err := scic.AnalyzeFromData(data, bins, cfg)
+    result, err := scic.Decompose(Y, X, config)
     if err != nil {
         panic(err)
     }
 
     // Analyze directional causality
-    fmt.Printf("Positive causality:   %+v\n", result.Positive)    // Target increases when agent increases
-    fmt.Printf("Negative causality:   %+v\n", result.Negative)    // Target decreases when agent increases
-    fmt.Printf("Sign stability:       %+v\n", result.SignStability) // Bootstrap confidence (0-1)
-    fmt.Printf("Conflicts detected:   %+v\n", result.Conflicts)   // Conflicting directionality
+    fmt.Printf("X1 direction: %.2f (facilitative)\n", result.Directions["0"])
+    fmt.Printf("X2 direction: %.2f (inhibitory)\n", result.Directions["1"])
+    fmt.Printf("Conflict index: %.2f\n", result.Conflicts["0,1"])
+    fmt.Printf("X1 confidence: %.2f\n", result.Confidence["0"])
+    fmt.Printf("X2 confidence: %.2f\n", result.Confidence["1"])
+
+    // SURD components also available
+    fmt.Printf("Total causality: R=%.1f%% U=%.1f%% S=%.1f%%\n",
+        result.TotalR*100, result.TotalU*100, result.TotalS*100)
 }
 ```
 
@@ -140,7 +146,7 @@ import (
     "fmt"
     "math/rand"
 
-    "github.com/causalgo/causalgo/internal/varselect"
+    "github.com/causalgo/causalgo/varselect"
     "gonum.org/v1/gonum/mat"
 )
 
@@ -180,7 +186,7 @@ func main() {
 package main
 
 import (
-    "github.com/causalgo/causalgo/pkg/matdata"
+    "github.com/causalgo/causalgo/matdata"
     "github.com/causalgo/causalgo/surd"
 )
 
@@ -216,7 +222,7 @@ package main
 
 import (
     "github.com/causalgo/causalgo/surd"
-    "github.com/causalgo/causalgo/pkg/visualization"
+    "github.com/causalgo/causalgo/visualization"
 )
 
 func main() {
@@ -270,37 +276,38 @@ Available systems: `xor` (synergy), `duplicated` (redundancy), `independent` (un
 
 ## Package Structure
 
+Following Go 2025 best practices (gonum-style: public packages at root, no `pkg/` directory):
+
 ```
 causalgo/
-├── surd/                      # SURD algorithm (97.2% coverage)
-│   ├── surd.go               # Main decomposition API
+├── surd/                      # SURD algorithm (97.2% coverage) — PUBLIC API
+│   ├── surd.go               # Synergistic-Unique-Redundant Decomposition
+│   └── example_test.go       # Testable examples
+├── scic/                      # SCIC™ algorithm (94.6% coverage) — PUBLIC API
+│   ├── scic.go               # Signed Causal Information Components
+│   └── example_test.go       # 16 professional testable examples
+├── varselect/                 # VarSelect algorithm (~85% coverage) — PUBLIC API
+│   └── varselect.go          # LASSO-based causal ordering
+├── matdata/                   # MATLAB utilities — PUBLIC API
+│   ├── matdata.go            # Native .mat file reading (v5, v7.3 HDF5)
 │   └── example_test.go       # Usage examples
+├── visualization/             # Plotting — PUBLIC API
+│   ├── plot.go               # SURD/SCIC bar charts
+│   └── export.go             # Multi-format export (PNG/SVG/PDF)
+├── regression/                # Regression models
+│   ├── regression.go         # Regressor interface
+│   └── lasso.go              # LASSO implementation
 ├── internal/
-│   ├── scic/                 # SCIC algorithm (94.6% coverage)
-│   │   ├── scic.go          # Directional causality analysis
-│   │   └── example_test.go  # Usage examples
 │   ├── entropy/              # Information theory (97.6% coverage)
-│   │   └── entropy.go       # Entropy, MI, conditional MI
+│   │   └── entropy.go        # Shannon entropy, MI, conditional MI
 │   ├── histogram/            # N-dimensional histograms (98.7% coverage)
-│   │   └── histogram.go     # NDHistogram with smoothing
-│   ├── varselect/            # Variable selection (~85% coverage)
-│   │   └── varselect.go     # LASSO-based causal ordering
+│   │   └── histogram.go      # NDHistogram with smoothing
 │   ├── comparison/           # Algorithm comparison tests
-│   └── validation/           # Validation against Python reference
-├── pkg/
-│   ├── matdata/              # MATLAB file reading
-│   │   ├── matdata.go       # Native .mat support (v5, v7.3)
-│   │   └── example_test.go  # Usage examples
-│   └── visualization/        # Plotting (PNG/SVG/PDF)
-│       ├── plot.go          # SURD bar charts
-│       └── export.go        # Multi-format export
+│   └── validation/           # SURD validation against Python reference
 ├── cmd/
-│   └── visualize/           # CLI visualization tool
-├── regression/               # LASSO implementations
-│   ├── regression.go        # Regressor interface
-│   └── lasso_external.go    # Adapter for causalgo/lasso
+│   └── visualize/            # CLI visualization tool
 └── testdata/
-    └── matlab/              # Real turbulence datasets (70+ MB)
+    └── matlab/               # Real turbulence datasets
 ```
 
 ## Validation 🧪
@@ -330,7 +337,7 @@ SURD implementation validated against Python reference from [Nature Communicatio
 Run validation tests:
 ```bash
 go test -v ./internal/validation/...  # SURD validation
-go test -v ./internal/scic/...        # SCIC validation
+go test -v ./scic/...                 # SCIC validation
 ```
 
 ## Testing
@@ -393,9 +400,10 @@ Optimized for both small-scale analysis and large time series:
 ## Documentation
 
 - **Examples**: See [examples in godoc](https://pkg.go.dev/github.com/causalgo/causalgo)
-- **Visualization**: [pkg/visualization/README.md](pkg/visualization/README.md)
-- **MATLAB Integration**: [pkg/matdata/](pkg/matdata/)
-- **Algorithm Comparison**: [internal/comparison/](internal/comparison/)
+- **SCIC Examples**: [scic/example_test.go](scic/example_test.go) — 16 professional testable examples
+- **SURD Paper**: [docs/SURD_paper.md](docs/SURD_paper.md) — Reference implementation details
+- **Visualization**: [visualization/](visualization/)
+- **MATLAB Integration**: [matdata/](matdata/)
 
 ## Contributing
 
