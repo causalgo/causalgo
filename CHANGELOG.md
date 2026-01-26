@@ -7,13 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.5.0] - 2026-01-26
 
 ### Added
-- TBD
+- **16 Professional SCIC Examples** following Go 2025+ best practices:
+  - Basic: `Decompose`, `DefaultConfig`
+  - Direction: facilitative, inhibitory effects detection
+  - Conflict: `ComputeConflicts`, conflicting variables analysis
+  - SURD+SCIC: full integrated analysis
+  - Synergy: XOR synergy, duplicated redundancy
+  - Real-World: climate system, economic factors
+  - Methods: Quartile, MedianSplit, Gradient comparison
+  - Confidence: bootstrap confidence, low confidence detection
+  - Workflow: complete analysis workflow
+  - Edge Cases: non-monotonic (U-shaped) relationships
+- **SURD Paper Reference** (`docs/SURD_paper.md`) — Markdown version of Nature Communications 2024 paper
+- **SURD Implementation Verification Report** (`docs/dev/analysis/SURD_IMPLEMENTATION_VERIFICATION.md`)
 
 ### Changed
-- TBD
+- **Package Restructuring** (Go 2025 best practices, gonum-style):
+  - `internal/scic/` → `scic/` (public API)
+  - `internal/varselect/` → `varselect/` (public API)
+  - `pkg/matdata/` → `matdata/` (public API)
+  - `pkg/visualization/` → `visualization/` (public API)
+  - Removed `pkg/` directory entirely
+- **README.md**: Updated all import paths and package structure documentation
+- **Dependencies updated**:
+  - gonum v0.16.0 → v0.17.0
+  - scigolib/matlab v0.3.1 → v0.3.2
+  - scigolib/hdf5 v0.13.1 → v0.13.2
+  - golang.org/x/image v0.25.0 → v0.35.0
+  - golang.org/x/text v0.23.0 → v0.33.0
 
 ---
 
@@ -27,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Conflict detection between variables
   - Validated on canonical systems (XOR, Duplicated, Inhibitor, U-Shaped, Conflicting)
   - Validated on real-world data (energy cascade turbulence dataset)
-  - Complete testable examples in `internal/scic/example_test.go`
+  - Complete testable examples in `scic/example_test.go`
 - Foundation for commercialization:
   - MIT License with updated copyright holder (Andrey Kolkov)
   - AUTHORS file with lead developer and AI-assisted development attribution
