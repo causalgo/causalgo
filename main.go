@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/causalgo/causalgo/internal/varselect"
+	"github.com/causalgo/causalgo/varselect"
 	"gonum.org/v1/gonum/mat"
 )
 

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/causalgo/causalgo/pkg/matdata"
+	"github.com/causalgo/causalgo/matdata"
 	"github.com/causalgo/causalgo/surd"
 )
 

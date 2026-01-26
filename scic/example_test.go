@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/causalgo/causalgo/internal/scic"
+	"github.com/causalgo/causalgo/scic"
 )
 
 // ExampleDecompose demonstrates basic SCIC decomposition with a simple

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/causalgo/causalgo/internal/varselect"
 	"github.com/causalgo/causalgo/surd"
+	"github.com/causalgo/causalgo/varselect"
 )
 
 const (

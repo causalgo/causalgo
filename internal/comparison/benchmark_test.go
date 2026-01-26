@@ -3,8 +3,8 @@ package comparison
 import (
 	"testing"
 
-	"github.com/causalgo/causalgo/internal/varselect"
 	"github.com/causalgo/causalgo/surd"
+	"github.com/causalgo/causalgo/varselect"
 )
 
 // BenchmarkVarSelectLinear benchmarks VarSelect on linear system.

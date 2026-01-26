@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/causalgo/causalgo/internal/varselect"
 	"github.com/causalgo/causalgo/surd"
+	"github.com/causalgo/causalgo/varselect"
 	"gonum.org/v1/gonum/mat"
 )
 
