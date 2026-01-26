@@ -2,7 +2,6 @@ package scic_test
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 
 	"github.com/causalgo/causalgo/scic"
@@ -63,9 +62,10 @@ func ExampleDecompose_facilitative() {
 	X := make([][]float64, 1)
 	X[0] = make([]float64, n)
 
+	xSlice := X[0]
 	for i := 0; i < n; i++ {
 		x := rng.Float64() * 10
-		X[0][i] = x
+		xSlice[i] = x
 		Y[i] = 2*x + rng.NormFloat64()*0.5
 	}
 
@@ -98,9 +98,10 @@ func ExampleDecompose_inhibitory() {
 	X := make([][]float64, 1)
 	X[0] = make([]float64, n)
 
+	xSlice := X[0]
 	for i := 0; i < n; i++ {
 		x := rng.Float64() * 10
-		X[0][i] = x
+		xSlice[i] = x
 		Y[i] = -2*x + 20 + rng.NormFloat64()*0.5
 	}
 
@@ -156,11 +157,12 @@ func ExampleDecompose_conflictingVariables() {
 	X[0] = make([]float64, n)
 	X[1] = make([]float64, n)
 
+	x0Slice, x1Slice := X[0], X[1]
 	for i := 0; i < n; i++ {
 		x1 := rng.Float64() * 10
 		x2 := rng.Float64() * 10
-		X[0][i] = x1
-		X[1][i] = x2
+		x0Slice[i] = x1
+		x1Slice[i] = x2
 		Y[i] = 2*x1 - 2*x2 + rng.NormFloat64()*0.1 // Strong effects, low noise
 	}
 
@@ -198,11 +200,12 @@ func ExampleDecompose_fullAnalysis() {
 	X[0] = make([]float64, n)
 	X[1] = make([]float64, n)
 
+	x0Slice, x1Slice := X[0], X[1]
 	for i := 0; i < n; i++ {
 		x1 := rng.Float64() * 10
 		x2 := rng.Float64() * 10
-		X[0][i] = x1
-		X[1][i] = x2
+		x0Slice[i] = x1
+		x1Slice[i] = x2
 		Y[i] = 3*x1 + 3*x2 + rng.NormFloat64()*0.1
 	}
 
@@ -242,12 +245,13 @@ func ExampleDecompose_xorSynergy() {
 	X[0] = make([]float64, n)
 	X[1] = make([]float64, n)
 
+	x0Slice, x1Slice := X[0], X[1]
 	for i := 0; i < n; i++ {
 		x1 := rng.Intn(2) // 0 or 1
 		x2 := rng.Intn(2) // 0 or 1
 		y := x1 ^ x2      // XOR
-		X[0][i] = float64(x1)
-		X[1][i] = float64(x2)
+		x0Slice[i] = float64(x1)
+		x1Slice[i] = float64(x2)
 		Y[i] = float64(y)
 	}
 
@@ -302,10 +306,11 @@ func ExampleDecompose_duplicatedRedundancy() {
 	X[0] = make([]float64, n)
 	X[1] = make([]float64, n)
 
+	x0Slice, x1Slice := X[0], X[1]
 	for i := 0; i < n; i++ {
 		x := rng.Float64() * 10
-		X[0][i] = x          // X1
-		X[1][i] = x          // X2 = X1 (duplicated)
+		x0Slice[i] = x // X1
+		x1Slice[i] = x // X2 = X1 (duplicated)
 		Y[i] = x + rng.NormFloat64()*0.1
 	}
 
@@ -359,11 +364,12 @@ func ExampleDecompose_climateSystem() {
 	sources[0] = make([]float64, n) // Temperature
 	sources[1] = make([]float64, n) // Precipitation
 
+	tempSlice, precipSlice := sources[0], sources[1]
 	for i := 0; i < n; i++ {
 		temp := rng.Float64() * 30   // 0-30°C
 		precip := rng.Float64() * 30 // 0-30 (normalized)
-		sources[0][i] = temp
-		sources[1][i] = precip
+		tempSlice[i] = temp
+		precipSlice[i] = precip
 		vegetation[i] = 5*temp + 5*precip + rng.NormFloat64()*0.1
 	}
 
@@ -403,13 +409,14 @@ func ExampleDecompose_economicFactors() {
 	factors[1] = make([]float64, n) // Unemployment
 	factors[2] = make([]float64, n) // Consumer Confidence
 
+	interestSlice, unemploySlice, confSlice := factors[0], factors[1], factors[2]
 	for i := 0; i < n; i++ {
-		interest := rng.Float64() * 10    // 0-10%
+		interest := rng.Float64() * 10     // 0-10%
 		unemployment := rng.Float64() * 10 // 0-10%
-		confidence := rng.Float64() * 10  // 0-10 (normalized)
-		factors[0][i] = interest
-		factors[1][i] = unemployment
-		factors[2][i] = confidence
+		confidence := rng.Float64() * 10   // 0-10 (normalized)
+		interestSlice[i] = interest
+		unemploySlice[i] = unemployment
+		confSlice[i] = confidence
 		// Strong clear effects with minimal noise
 		marketIndex[i] = -5*interest - 5*unemployment + 5*confidence + rng.NormFloat64()*0.1
 	}
@@ -490,9 +497,10 @@ func ExampleDecompose_bootstrapConfidence() {
 	X := make([][]float64, 1)
 	X[0] = make([]float64, n)
 
+	xSlice := X[0]
 	for i := 0; i < n; i++ {
 		x := rng.Float64() * 10
-		X[0][i] = x
+		xSlice[i] = x
 		Y[i] = 2*x + rng.NormFloat64()*0.5
 	}
 
@@ -531,9 +539,10 @@ func ExampleDecompose_lowConfidence() {
 	X := make([][]float64, 1)
 	X[0] = make([]float64, n)
 
+	xSlice := X[0]
 	for i := 0; i < n; i++ {
 		x := rng.Float64() * 10
-		X[0][i] = x
+		xSlice[i] = x
 		Y[i] = 0.1*x + rng.NormFloat64()*5 // Weak signal, high noise
 	}
 
@@ -574,11 +583,12 @@ func ExampleDecompose_completeWorkflow() {
 	sources[0] = make([]float64, n)
 	sources[1] = make([]float64, n)
 
+	src0, src1 := sources[0], sources[1]
 	for i := 0; i < n; i++ {
 		s1 := rng.Float64() * 10
 		s2 := rng.Float64() * 10
-		sources[0][i] = s1
-		sources[1][i] = s2
+		src0[i] = s1
+		src1[i] = s2
 		target[i] = 5*s1 - 5*s2 + rng.NormFloat64()*0.1 // Strong effects, low noise
 	}
 
@@ -668,10 +678,11 @@ func ExampleDecompose_nonMonotonicRelationship() {
 	X := make([][]float64, 1)
 	X[0] = make([]float64, n)
 
+	xSlice := X[0]
 	for i := 0; i < n; i++ {
 		x := rng.Float64() * 10 // X in [0, 10]
-		X[0][i] = x
-		Y[i] = math.Pow(x-5, 2) + rng.NormFloat64()*0.5
+		xSlice[i] = x
+		Y[i] = (x-5)*(x-5) + rng.NormFloat64()*0.5
 	}
 
 	config := scic.DefaultConfig()
