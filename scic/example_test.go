@@ -664,6 +664,76 @@ func interpretConfidence(c float64) string {
 	}
 }
 
+// === DirectionProfile Examples ===
+
+// ExampleDirectionProfile demonstrates using DirectionProfile to detect
+// non-monotonic relationships where overall direction is near zero.
+func ExampleDirectionProfile() {
+	// U-shaped: Y = (X-5)^2 → overall direction ≈ 0
+	// But DirectionProfile reveals: left half inhibitory, right half facilitative
+	n := 2000
+	rng := rand.New(rand.NewSource(60)) //nolint:gosec // deterministic
+
+	Y := make([]float64, n)
+	X := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = (X[i]-5)*(X[i]-5) + rng.NormFloat64()*0.5
+	}
+
+	config := scic.DefaultConfig()
+	config.MinSamplesPerQuartile = 10
+
+	// Overall direction is near zero (non-monotonic)
+	overall := scic.ComputeDirection(Y, X, scic.QuartileMethod, config)
+	fmt.Printf("Overall direction: %s\n", interpretDirection(overall.Direction))
+
+	// DirectionProfile reveals the sign change
+	profile := scic.DirectionProfile(Y, X, 2, config)
+	fmt.Printf("Left regime [X < 5]:  %s\n", interpretDirection(profile[0].Direction))
+	fmt.Printf("Right regime [X > 5]: %s\n", interpretDirection(profile[1].Direction))
+	fmt.Println("Conclusion: non-monotonic relationship detected")
+	// Output:
+	// Overall direction: neutral
+	// Left regime [X < 5]:  inhibitory
+	// Right regime [X > 5]: facilitative
+	// Conclusion: non-monotonic relationship detected
+}
+
+// ExampleDirectionProfile_thresholdDetection demonstrates detecting a
+// regime change at a threshold using DirectionProfile.
+func ExampleDirectionProfile_thresholdDetection() {
+	// System with sign change at threshold = 5
+	// Below 5: Y increases with X
+	// Above 5: Y decreases with X
+	n := 2000
+	rng := rand.New(rand.NewSource(61)) //nolint:gosec // deterministic
+
+	Y := make([]float64, n)
+	X := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		noise := rng.NormFloat64() * 0.3
+		if X[i] < 5 {
+			Y[i] = 2*X[i] + noise
+		} else {
+			Y[i] = -2*X[i] + 20 + noise
+		}
+	}
+
+	config := scic.DefaultConfig()
+	config.MinSamplesPerQuartile = 10
+
+	profile := scic.DirectionProfile(Y, X, 2, config)
+	fmt.Printf("Below threshold: %s\n", interpretDirection(profile[0].Direction))
+	fmt.Printf("Above threshold: %s\n", interpretDirection(profile[1].Direction))
+	fmt.Println("Conclusion: regime-dependent causality detected")
+	// Output:
+	// Below threshold: facilitative
+	// Above threshold: inhibitory
+	// Conclusion: regime-dependent causality detected
+}
+
 // === Edge Case Examples ===
 
 // ExampleDecompose_nonMonotonicRelationship demonstrates SCIC behavior

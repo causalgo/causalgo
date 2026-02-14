@@ -99,8 +99,26 @@ config := scic.Config{
 
 **High conflict + high synergy** suggests regime-dependent causality (the effect switches depending on conditions).
 
+## Non-Monotonic Relationships: DirectionProfile
+
+For U-shaped or threshold systems where overall `Direction ≈ 0`, use `DirectionProfile` to detect regime-specific directions:
+
+```go
+// Y = (X-5)^2 → overall direction ≈ 0, but...
+profile := scic.DirectionProfile(Y, X, 2, config)
+// profile[0].Direction ≈ -1 (left half: inhibitory)
+// profile[1].Direction ≈ +1 (right half: facilitative)
+```
+
+Each `RegimeDirection` contains:
+- `Low`, `High` — X range boundaries
+- `Direction` — D_Q within this regime `[-1, +1]`
+- `Valid` — whether enough data was available
+- `N` — sample count in this regime
+
+Typical `numRegimes`: 2 for threshold detection, 3-4 for general exploration.
+
 ## Limitations
 
 - Exponential complexity in number of variables (`O(2^p)` from SURD)
-- Non-monotonic relationships (e.g. `Y = X^2`) give `Direction ~ 0`
 - Requires sufficient data per quartile (default: 5 samples minimum)

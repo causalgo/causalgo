@@ -425,6 +425,87 @@ func aggregateDirectionsWeighted(directions, weights []float64) float64 {
 	return weightedSum / totalWeight
 }
 
+// RegimeDirection contains the direction estimate within a specific regime
+// (segment) of the source variable's range.
+type RegimeDirection struct {
+	// Low and High define the range of X in this regime.
+	Low, High float64
+
+	// Direction is the estimated D_Q within this regime [-1, +1].
+	Direction float64
+
+	// Valid indicates if enough data was available in this regime.
+	Valid bool
+
+	// N is the number of samples in this regime.
+	N int
+}
+
+// DirectionProfile computes direction of Y with respect to X across
+// numRegimes equal-frequency segments of X. This reveals non-monotonic
+// patterns where the overall direction may be near zero but regime-specific
+// directions are strong.
+//
+// For example, Y = X² gives overall D_Q ≈ 0, but DirectionProfile with
+// 2 regimes reveals D_Q < 0 (left half) and D_Q > 0 (right half).
+//
+// numRegimes must be >= 2. Typical values: 2 for threshold detection,
+// 3-4 for general non-monotonicity exploration.
+func DirectionProfile(Y, X []float64, numRegimes int, config Config) []RegimeDirection { //nolint:gocritic // Y/X are standard mathematical notation
+	n := len(Y)
+	if n == 0 || numRegimes < 2 {
+		return nil
+	}
+
+	// Create indices sorted by X
+	indices := make([]int, n)
+	for i := range indices {
+		indices[i] = i
+	}
+	sort.Slice(indices, func(a, b int) bool {
+		return X[indices[a]] < X[indices[b]]
+	})
+
+	regimeSize := n / numRegimes
+	if regimeSize < config.MinSamplesPerQuartile*2 {
+		// Not enough data per regime for meaningful direction estimation
+		regimeSize = n / numRegimes // proceed anyway, mark invalid if too small
+	}
+
+	results := make([]RegimeDirection, numRegimes)
+
+	for r := 0; r < numRegimes; r++ {
+		start := r * regimeSize
+		end := (r + 1) * regimeSize
+		if r == numRegimes-1 {
+			end = n // last regime gets remaining samples
+		}
+
+		regimeIndices := indices[start:end]
+		regimeN := len(regimeIndices)
+
+		// Extract Y and X for this regime
+		yRegime := make([]float64, regimeN)
+		xRegime := make([]float64, regimeN)
+		for i, idx := range regimeIndices {
+			yRegime[i] = Y[idx]
+			xRegime[i] = X[idx]
+		}
+
+		results[r] = RegimeDirection{
+			Low:  xRegime[0],
+			High: xRegime[regimeN-1],
+			N:    regimeN,
+		}
+
+		dirResult := ComputeDirection(yRegime, xRegime, config.DirectionMethod, config)
+		results[r].Direction = dirResult.Direction
+		results[r].Valid = dirResult.Valid
+	}
+
+	return results
+}
+
 // bootstrapConfidence estimates confidence via bootstrap resampling.
 //
 // For each variable, the confidence is computed as the proportion of bootstrap
