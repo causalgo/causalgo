@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.0] - 2026-02-14
+
+### Added
+- **PMI-based DIM** (`PMIMethod`) — 4th direction method based on theoretical Definition 2.2
+  - Formula: `DIM = Σ sign(δ_Y(x)) · C(x) / I(Y;X)` where `C(x) = p(x) · D_KL(p(Y|X=x) ‖ p(Y))`
+  - Uses `internal/histogram` for consistency with SURD
+  - 6 dedicated tests + 1 godoc example
+- **DirectionProfile** — regime-based direction detection for non-monotonic systems
+  - Detects U-shaped, threshold, and regime-switching relationships
+  - Returns per-regime direction with boundaries and sample counts
+  - 5 tests + 2 godoc examples
+- **MI-weighted direction aggregation** — variable pair directions weighted by mutual information from SURD
+- **Public SCIC documentation** (`docs/SCIC.md`) — quick start, configuration, interpreting results
+
+### Changed
+- **Conflict Index inverted** — intuitive semantics: `0` = aligned, `1` = opposing (was reversed)
+  - Formula: `Conflict = 1 - |d₁+d₂|/(|d₁|+|d₂|)`
+  - All tests and examples updated to match new semantics
+- **SCIC test coverage**: 94.6% → ~95% (70 tests/examples, was 52+16)
+- **Direction methods**: 4 methods available (Quartile, MedianSplit, Gradient, PMI)
+- **README.md**: Updated SCIC coverage, examples count, DirectionProfile mention
+
+---
+
 ## [0.5.0] - 2026-01-26
 
 ### Added
@@ -254,7 +278,9 @@ See [ROADMAP.md](ROADMAP.md) for future plans toward v1.0.0.
 
 ---
 
-[Unreleased]: https://github.com/causalgo/causalgo/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/causalgo/causalgo/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/causalgo/causalgo/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/causalgo/causalgo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/causalgo/causalgo/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/causalgo/causalgo/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/causalgo/causalgo/compare/v0.1.0...v0.2.0

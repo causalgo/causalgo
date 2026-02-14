@@ -1,6 +1,8 @@
 # CausalGo Roadmap
 
-This document outlines the development roadmap for CausalGo from current alpha stage (v0.5.x) to production-ready v1.0.0 and beyond.
+Development plan for CausalGo from v0.6.0 to production-ready v1.0.0 and beyond.
+
+For completed features see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -17,47 +19,18 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ---
 
-## Current Status (v0.5.0)
+## Current Status
 
-**Released**: v0.5.0 (January 2026)
-**Previous**: v0.4.0 (November 2025) - SCIC algorithm complete
+**Latest**: v0.6.0 (February 2026) — SCIC theory finalized, 4 direction methods, DirectionProfile, ~95% coverage
 
-### ✅ Completed in v0.5.0
-- **Package Restructuring** (Go 2025 best practices, gonum-style):
-  - `scic/` — public API (was `internal/scic/`)
-  - `varselect/` — public API (was `internal/varselect/`)
-  - `matdata/` — public API (was `pkg/matdata/`)
-  - `visualization/` — public API (was `pkg/visualization/`)
-  - Removed `pkg/` directory entirely
-- **16 Professional SCIC Examples** with testable output
-- **SURD Paper Reference** in markdown (`docs/SURD_paper.md`)
-- **SURD Implementation Verification Report**
-- **Updated Dependencies** (gonum v0.17.0, etc.)
-
-### ✅ Completed in v0.4.0
-- **SCIC algorithm** - 94.6% test coverage
-  - 3 directionality methods (Quartile, MedianSplit, Gradient)
-  - Bootstrap confidence estimation (sign stability)
-  - Conflict detection between variables
-  - Validated on canonical systems (XOR, Duplicated, Inhibitor, U-Shaped, Conflicting)
-- Full SURD implementation (97.2% test coverage)
-- VarSelect LASSO-based algorithm (~85% coverage)
-- Information theory primitives (entropy, MI, CMI)
-- N-dimensional histogram construction with smoothing
-- MATLAB file I/O (v5, v7.3/HDF5)
-- Visualization module (PNG/SVG/PDF export)
-- Validation against Python reference (100% match)
-- Open source documentation (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY)
-- **Licensing**: MIT License with CLA for IP protection
-
-### 🔧 Known Limitations
+### Known Limitations
 - Performance not optimized for very large systems (>100K samples, >10 variables)
 - Limited multivariate SURD (currently 2-3 agents tested, scales to N theoretically)
 - VarSelect test coverage needs improvement (target: 90%+)
 
 ---
 
-## v0.6.0 - Performance & Optimization (Target: Q2 2026)
+## v0.7.0 - Performance & Optimization (Target: Q2 2026)
 
 ### Goals
 - Optimize SURD for large-scale systems
@@ -67,72 +40,34 @@ This document outlines the development roadmap for CausalGo from current alpha s
 ### Features
 
 #### Performance Optimization
-- [ ] **SURD Parallelization**
-  - Parallel specific MI calculations across agent combinations
-  - Concurrent histogram marginalization
-  - Benchmark: < 500 ms for 100K samples, 5 variables, 10 bins
-- [ ] **Memory Optimization**
-  - Streaming histogram construction for limited RAM
-  - In-place operations to reduce allocations
-  - Sparse histogram support for high-dimensional data
-- [ ] **Profiling & Benchmarking**
-  - Comprehensive benchmark suite for both algorithms
-  - Memory and CPU profiling integration
-  - Performance regression tests in CI
+- [ ] **SURD Parallelization** — parallel MI calculations, concurrent marginalization
+- [ ] **Memory Optimization** — streaming histograms, sparse support for high-dimensional data
+- [ ] **Profiling & Benchmarking** — comprehensive benchmark suite, performance regression tests in CI
 
 #### VarSelect Improvements
-- [ ] **Enhanced LASSO Integration**
-  - Cross-validation for automatic lambda selection
-  - Elastic Net support (L1 + L2 regularization)
-  - Parallel coordinate descent
-- [ ] **Test Coverage**
-  - Increase VarSelect coverage to 90%+
-  - Add edge case tests (collinearity, small samples)
-  - Benchmark against Python/R implementations
+- [ ] **Enhanced LASSO** — cross-validation for lambda, Elastic Net (L1+L2)
+- [ ] **Test Coverage** — increase to 90%+, edge case tests, benchmark vs Python/R
 
 #### Developer Experience
-- [ ] **Progress Callbacks**
-  - Report computation progress for long-running operations
-  - Cancellation via `context.Context`
-- [ ] **Better Error Messages**
-  - Actionable error messages with recovery suggestions
-  - Input validation with clear failure modes
+- [ ] **Progress Callbacks** — computation progress, cancellation via `context.Context`
+- [ ] **Better Error Messages** — actionable recovery suggestions
 
 ---
 
-## v0.7.0 - Interactive Tools & Documentation (Target: Q3 2026)
+## v0.8.0 - Visualization & Tools (Target: Q3 2026)
 
 ### Goals
 - Make causal analysis results more interpretable
-- Enhance documentation with interactive examples
-- Improve developer experience
+- Advanced visualization capabilities
 
 ### Features
-
-#### Visualization Enhancements (`visualization/`)
-- [x] **SURD Result Visualization** ✅ (completed v0.4.0)
-  - Bar charts for R/U/S components
-  - Export to PNG, SVG, PDF
-- [ ] **Advanced Visualizations**
-  - Heatmaps for pairwise causality
-  - Network graphs for causal relationships
-  - Interactive HTML export
-- [ ] **VarSelect Causal Graphs**
-  - Directed acyclic graph (DAG) rendering
-  - Edge weights visualization
-  - Adjacency matrix heatmaps
-
-#### Interactive Documentation
-- [ ] **Jupyter Notebook Integration** (via `gophernotes`)
-  - Example notebooks for common workflows
-  - Interactive tutorials
-- [ ] **Web-based Examples**
-  - WASM compilation for browser-based demos
-  - Interactive parameter tuning
+- [ ] **Advanced Visualizations** — heatmaps, network graphs, interactive HTML export
+- [ ] **VarSelect Causal Graphs** — DAG rendering, edge weights, adjacency heatmaps
+- [ ] **SCIC Visualizations** — direction heatmaps, conflict matrices, DirectionProfile plots
 
 ---
 
-## v0.8.0 - Advanced Algorithms (Target: Q4 2026)
+## v0.9.0 - Advanced Algorithms (Target: Q4 2026)
 
 ### Goals
 - Extend causal discovery capabilities
@@ -141,79 +76,18 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 ### Features
 
-#### Multivariate SURD Extensions
-- [ ] **N-way Decomposition** (N > 3 agents)
-  - Validated examples with 4-5 agents
-  - Efficient combinatorial computation
-  - Synergy visualization for high-order interactions
-- [ ] **Conditional SURD**
-  - Decomposition conditioned on confounders
-  - Partial information decomposition
+#### Multivariate Extensions
+- [ ] **N-way SURD** (N > 3 agents) — efficient combinatorial computation
+- [ ] **Conditional SURD** — decomposition conditioned on confounders
 
 #### Time Series Causality
-- [ ] **Granger Causality**
-  - VAR-based Granger testing
-  - Integration with VarSelect
-- [ ] **Transfer Entropy**
-  - Time-delayed information transfer
-  - Comparison with SURD on temporal data
-- [ ] **Dynamic Causal Graphs**
-  - Time-varying causal networks
-  - Change point detection
+- [ ] **Granger Causality** — VAR-based testing, integration with VarSelect
+- [ ] **Transfer Entropy** — time-delayed information transfer
+- [ ] **Dynamic Causal Graphs** — time-varying networks, change point detection
 
 #### Statistical Testing
-- [ ] **Significance Testing**
-  - Bootstrap confidence intervals for SURD components
-  - Permutation tests for VarSelect
-  - Multiple testing correction (Bonferroni, FDR)
-- [ ] **Model Selection**
-  - BIC/AIC for VarSelect order selection
-  - Cross-validation for hyperparameters
-
----
-
-## v0.9.0 - Production Readiness (Target: Q1 2027)
-
-### Goals
-- Harden library for production use
-- Comprehensive documentation
-- Stable API for v1.0
-
-### Features
-
-#### API Finalization
-- [ ] **Stable Interfaces**
-  - Freeze public API for v1.0 compatibility
-  - Deprecation notices for breaking changes
-  - Migration guide from v0.x
-- [ ] **Configuration Management**
-  - Unified `Config` structs for all algorithms
-  - Sensible defaults with override options
-  - Validation with clear error messages
-
-#### Documentation
-- [ ] **Complete godoc Coverage**
-  - All exported types/functions documented
-  - Mathematical background for algorithms
-  - References to papers and implementations
-- [ ] **User Guide**
-  - Conceptual overview of causal analysis
-  - Algorithm selection guide (when to use SURD vs VarSelect)
-  - Best practices for real-world data
-- [ ] **API Reference**
-  - Hosted on pkg.go.dev
-  - Searchable examples
-  - Cross-referenced documentation
-
-#### Quality Assurance
-- [ ] **Extended Test Suite**
-  - 90%+ coverage across all packages
-  - Property-based testing (fuzzing)
-  - Chaos engineering tests (random failures)
-- [ ] **Security Audit**
-  - Third-party security review
-  - Fuzzing for input validation
-  - Dependency vulnerability scanning
+- [ ] **Significance Testing** — bootstrap CIs, permutation tests, multiple testing correction
+- [ ] **Model Selection** — BIC/AIC for order selection, cross-validation
 
 ---
 
@@ -230,11 +104,12 @@ This document outlines the development roadmap for CausalGo from current alpha s
 - **Performance**: Documented performance characteristics
 - **Support**: Active maintenance for 2+ years
 
-### Features
-- All features from v0.6-v0.9 integrated and tested
-- Comprehensive benchmarks vs Python/R libraries
-- Case studies and success stories
-- Commercial support options
+### Pre-release Checklist
+- [ ] Freeze public API, migration guide from v0.x
+- [ ] Complete godoc coverage with mathematical background
+- [ ] User guide with algorithm selection and best practices
+- [ ] 90%+ coverage across all packages
+- [ ] Security audit and fuzzing
 
 ---
 
@@ -243,39 +118,19 @@ This document outlines the development roadmap for CausalGo from current alpha s
 ### Potential Features (Community-Driven)
 
 #### Advanced Methods
-- [ ] **Causal Discovery Algorithms**
-  - PC algorithm (constraint-based)
-  - LiNGAM (linear non-Gaussian acyclic models)
-  - NOTEARS (continuous optimization for DAGs)
-- [ ] **Interventional Causality**
-  - Do-calculus for causal effects
-  - Backdoor/frontdoor adjustment
-  - Instrumental variables
-- [ ] **Counterfactual Reasoning**
-  - Structural causal models (SCMs)
-  - Counterfactual inference
+- [ ] **PC algorithm** (constraint-based causal discovery)
+- [ ] **LiNGAM** (linear non-Gaussian acyclic models)
+- [ ] **Interventional Causality** — do-calculus, backdoor/frontdoor adjustment
 
 #### Integrations
-- [ ] **Python Bindings** (via CGO or gRPC)
-  - Import CausalGo in Python workflows
-  - Pandas/NumPy interoperability
-- [ ] **R Package**
-  - CRAN submission
-  - Integration with `bnlearn`, `pcalg`
-- [ ] **Cloud Deployment**
-  - Serverless functions for causal analysis
-  - REST API for causal discovery services
+- [ ] **Python Bindings** (via CGO or gRPC) — Pandas/NumPy interoperability
+- [ ] **R Package** — CRAN submission, integration with `bnlearn`, `pcalg`
+- [ ] **Cloud Deployment** — serverless functions, REST API
 
 #### Domain-Specific Extensions
-- [ ] **Neuroscience**
-  - Spike train analysis
-  - Brain connectivity networks
-- [ ] **Finance**
-  - Market causality
-  - Risk factor decomposition
-- [ ] **Climate Science**
-  - Climate network analysis
-  - Extreme event attribution
+- [ ] **Neuroscience** — spike trains, brain connectivity
+- [ ] **Finance** — market causality, risk factor decomposition
+- [ ] **Climate Science** — climate networks, extreme event attribution
 
 ---
 
@@ -283,9 +138,8 @@ This document outlines the development roadmap for CausalGo from current alpha s
 
 We welcome community input on priorities and features!
 
-### How to Contribute
 1. **Feature Requests**: Open an issue with `[Feature Request]` tag
-2. **Discussions**: Participate in [GitHub Discussions](https://github.com/causalgo/causalgo/discussions)
+2. **Discussions**: [GitHub Discussions](https://github.com/causalgo/causalgo/discussions)
 3. **Pull Requests**: Implement roadmap items and submit PRs
 4. **Research Collaboration**: Propose new algorithms or methods
 
@@ -309,18 +163,4 @@ Once v1.0 is released:
 
 ---
 
-## Milestones Tracking
-
-Track progress on [GitHub Projects](https://github.com/causalgo/causalgo/projects) and [Milestones](https://github.com/causalgo/causalgo/milestones).
-
----
-
-## Questions?
-
-- **Roadmap Discussions**: [https://github.com/causalgo/causalgo/discussions](https://github.com/causalgo/causalgo/discussions)
-- **Feature Requests**: [https://github.com/causalgo/causalgo/issues/new](https://github.com/causalgo/causalgo/issues/new)
-
----
-
-**Last Updated**: January 2026
-**Status**: Living document — updated quarterly
+**Last Updated**: February 2026

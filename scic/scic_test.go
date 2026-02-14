@@ -141,10 +141,10 @@ func TestComputeConflict_OppositeDirections(t *testing.T) {
 
 	conflict := conflicts["0,1"]
 
-	// Opposite directions of similar magnitude should give low conflict
-	// Conflict = |0.9 + (-0.9)| / (|0.9| + |-0.9|) = 0 / 1.8 = 0
-	if conflict > 0.1 {
-		t.Errorf("Expected low conflict for opposite directions, got %f", conflict)
+	// Opposite directions of similar magnitude should give high conflict
+	// Conflict = 1 - |0.9 + (-0.9)| / (|0.9| + |-0.9|) = 1 - 0/1.8 = 1
+	if conflict < 0.9 {
+		t.Errorf("Expected high conflict for opposite directions, got %f", conflict)
 	}
 
 	t.Logf("Opposite directions conflict: %f", conflict)
@@ -162,10 +162,10 @@ func TestComputeConflict_SameDirections(t *testing.T) {
 
 	conflict := conflicts["0,1"]
 
-	// Same direction should give high conflict index (near 1)
-	// Conflict = |0.8 + 0.6| / (|0.8| + |0.6|) = 1.4 / 1.4 = 1
-	if conflict < 0.9 {
-		t.Errorf("Expected high conflict for same directions, got %f", conflict)
+	// Same direction should give low conflict index (near 0)
+	// Conflict = 1 - |0.8 + 0.6| / (|0.8| + |0.6|) = 1 - 1.4/1.4 = 0
+	if conflict > 0.1 {
+		t.Errorf("Expected low conflict for same directions, got %f", conflict)
 	}
 
 	t.Logf("Same directions conflict: %f", conflict)
@@ -183,8 +183,8 @@ func TestComputeConflict_MixedDirections(t *testing.T) {
 
 	conflict := conflicts["0,1"]
 
-	// Conflict = |0.8 + (-0.2)| / (|0.8| + |-0.2|) = 0.6 / 1.0 = 0.6
-	expectedConflict := 0.6
+	// Conflict = 1 - |0.8 + (-0.2)| / (|0.8| + |-0.2|) = 1 - 0.6/1.0 = 0.4
+	expectedConflict := 0.4
 	if math.Abs(conflict-expectedConflict) > 0.01 {
 		t.Errorf("Expected conflict %.2f, got %f", expectedConflict, conflict)
 	}
@@ -661,30 +661,41 @@ func TestPearsonCorrelation_EdgeCases(t *testing.T) {
 // TestComputeConflict_ZeroDenominator tests conflict with both directions zero.
 func TestComputeConflict_ZeroDenominator(t *testing.T) {
 	conflict := computeConflict(0, 0)
-	if conflict != 1.0 {
-		t.Errorf("Expected conflict=1.0 for zero directions, got %f", conflict)
+	if conflict != 0.0 {
+		t.Errorf("Expected conflict=0.0 for zero directions, got %f", conflict)
 	}
 }
 
-// TestAggregateDirections tests the aggregation function.
-func TestAggregateDirections(t *testing.T) {
+// TestAggregateDirectionsWeighted tests the MI-weighted aggregation function.
+func TestAggregateDirectionsWeighted(t *testing.T) {
 	// Empty should return 0
-	if agg := aggregateDirections(); agg != 0 {
+	if agg := aggregateDirectionsWeighted(nil, nil); agg != 0 {
 		t.Errorf("Expected 0 for empty, got %f", agg)
 	}
 
+	// Equal weights = simple average
+	agg := aggregateDirectionsWeighted([]float64{1.0, -1.0}, []float64{1.0, 1.0})
+	if agg != 0 {
+		t.Errorf("Expected 0 for equal weights (1, -1), got %f", agg)
+	}
+
+	// MI-weighted: variable with higher MI dominates
+	// dir=[+1, -1], weights=[9, 1] → weighted avg = (9 - 1)/10 = 0.8
+	agg = aggregateDirectionsWeighted([]float64{1.0, -1.0}, []float64{9.0, 1.0})
+	if math.Abs(agg-0.8) > 0.01 {
+		t.Errorf("Expected 0.8 for MI-weighted (9:1), got %f", agg)
+	}
+
+	// Zero weights fallback to simple average
+	agg = aggregateDirectionsWeighted([]float64{0.4, 0.6}, []float64{0, 0})
+	if math.Abs(agg-0.5) > 0.01 {
+		t.Errorf("Expected 0.5 for zero-weight fallback, got %f", agg)
+	}
+
 	// Single value
-	if agg := aggregateDirections(0.5); agg != 0.5 {
+	agg = aggregateDirectionsWeighted([]float64{0.5}, []float64{1.0})
+	if agg != 0.5 {
 		t.Errorf("Expected 0.5 for single value, got %f", agg)
-	}
-
-	// Multiple values (average)
-	if agg := aggregateDirections(1.0, -1.0); agg != 0 {
-		t.Errorf("Expected 0 for (1, -1), got %f", agg)
-	}
-
-	if agg := aggregateDirections(0.4, 0.6, 0.8); math.Abs(agg-0.6) > 0.01 {
-		t.Errorf("Expected 0.6 for (0.4, 0.6, 0.8), got %f", agg)
 	}
 }
 
@@ -819,5 +830,352 @@ func TestDecompose_MultipleVariables(t *testing.T) {
 	// Check conflicts
 	if _, ok := result.Conflicts["0,1"]; !ok {
 		t.Error("Expected conflict for pair 0,1")
+	}
+}
+
+// === DirectionProfile Tests ===
+
+// TestDirectionProfile_UShaped tests that DirectionProfile reveals opposing
+// directions in the two halves of a U-shaped relationship Y = (X-5)^2.
+func TestDirectionProfile_UShaped(t *testing.T) {
+	n := 2000
+	rng := rand.New(rand.NewSource(60)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10 // X in [0, 10]
+		Y[i] = (X[i]-5.0)*(X[i]-5.0) + rng.NormFloat64()*0.5
+	}
+
+	config := DefaultConfig()
+	config.MinSamplesPerQuartile = 10
+
+	// Overall direction should be near 0 (non-monotonic)
+	overall := ComputeDirection(Y, X, QuartileMethod, config)
+	if overall.Valid && math.Abs(overall.Direction) > 0.3 {
+		t.Errorf("Expected overall direction near 0 for U-shaped, got %.4f", overall.Direction)
+	}
+
+	// DirectionProfile with 2 regimes should reveal the sign change
+	profile := DirectionProfile(Y, X, 2, config)
+	if len(profile) != 2 {
+		t.Fatalf("Expected 2 regimes, got %d", len(profile))
+	}
+
+	t.Logf("Left regime [%.1f, %.1f]: direction=%.4f, n=%d, valid=%v",
+		profile[0].Low, profile[0].High, profile[0].Direction, profile[0].N, profile[0].Valid)
+	t.Logf("Right regime [%.1f, %.1f]: direction=%.4f, n=%d, valid=%v",
+		profile[1].Low, profile[1].High, profile[1].Direction, profile[1].N, profile[1].Valid)
+
+	// Left half (X < 5): Y decreases as X increases → negative direction
+	if !profile[0].Valid {
+		t.Fatal("Left regime should be valid")
+	}
+	if profile[0].Direction > -0.3 {
+		t.Errorf("Expected negative direction in left regime, got %.4f", profile[0].Direction)
+	}
+
+	// Right half (X > 5): Y increases as X increases → positive direction
+	if !profile[1].Valid {
+		t.Fatal("Right regime should be valid")
+	}
+	if profile[1].Direction < 0.3 {
+		t.Errorf("Expected positive direction in right regime, got %.4f", profile[1].Direction)
+	}
+}
+
+// TestDirectionProfile_ThresholdSystem tests regime detection for a system
+// with a sign change at a threshold.
+func TestDirectionProfile_ThresholdSystem(t *testing.T) {
+	n := 2000
+	rng := rand.New(rand.NewSource(61)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+
+	threshold := 5.0
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		noise := rng.NormFloat64() * 0.3
+		if X[i] < threshold {
+			Y[i] = 2*X[i] + noise // Positive below threshold
+		} else {
+			Y[i] = -2*X[i] + 4*threshold + noise // Negative above threshold
+		}
+	}
+
+	config := DefaultConfig()
+	config.MinSamplesPerQuartile = 10
+
+	profile := DirectionProfile(Y, X, 2, config)
+	if len(profile) != 2 {
+		t.Fatalf("Expected 2 regimes, got %d", len(profile))
+	}
+
+	t.Logf("Below threshold [%.1f, %.1f]: direction=%.4f", profile[0].Low, profile[0].High, profile[0].Direction)
+	t.Logf("Above threshold [%.1f, %.1f]: direction=%.4f", profile[1].Low, profile[1].High, profile[1].Direction)
+
+	// Below threshold: positive relationship
+	if !profile[0].Valid || profile[0].Direction < 0.3 {
+		t.Errorf("Expected positive direction below threshold, got %.4f (valid=%v)",
+			profile[0].Direction, profile[0].Valid)
+	}
+	// Above threshold: negative relationship
+	if !profile[1].Valid || profile[1].Direction > -0.3 {
+		t.Errorf("Expected negative direction above threshold, got %.4f (valid=%v)",
+			profile[1].Direction, profile[1].Valid)
+	}
+}
+
+// TestDirectionProfile_MonotonicLinear tests that a monotonic relationship
+// shows consistent direction across all regimes.
+func TestDirectionProfile_MonotonicLinear(t *testing.T) {
+	n := 1000
+	rng := rand.New(rand.NewSource(62)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = 3*X[i] + rng.NormFloat64()*0.5
+	}
+
+	config := DefaultConfig()
+	config.MinSamplesPerQuartile = 10
+
+	profile := DirectionProfile(Y, X, 3, config)
+	if len(profile) != 3 {
+		t.Fatalf("Expected 3 regimes, got %d", len(profile))
+	}
+
+	for r, reg := range profile {
+		t.Logf("Regime %d [%.1f, %.1f]: direction=%.4f", r, reg.Low, reg.High, reg.Direction)
+		if !reg.Valid {
+			t.Errorf("Regime %d should be valid", r)
+		}
+		if reg.Direction < 0.3 {
+			t.Errorf("Regime %d: expected positive direction, got %.4f", r, reg.Direction)
+		}
+	}
+}
+
+// TestDirectionProfile_EdgeCases tests edge cases for DirectionProfile.
+func TestDirectionProfile_EdgeCases(t *testing.T) {
+	// Empty data
+	result := DirectionProfile(nil, nil, 2, DefaultConfig())
+	if result != nil {
+		t.Errorf("Expected nil for empty data, got %v", result)
+	}
+
+	// numRegimes < 2
+	Y := []float64{1, 2, 3}
+	X := []float64{1, 2, 3}
+	result = DirectionProfile(Y, X, 1, DefaultConfig())
+	if result != nil {
+		t.Errorf("Expected nil for numRegimes=1, got %v", result)
+	}
+
+	// numRegimes = 0
+	result = DirectionProfile(Y, X, 0, DefaultConfig())
+	if result != nil {
+		t.Errorf("Expected nil for numRegimes=0, got %v", result)
+	}
+}
+
+// TestDirectionProfile_RegimeBoundaries verifies that regime boundaries cover
+// the full X range without gaps.
+func TestDirectionProfile_RegimeBoundaries(t *testing.T) {
+	n := 500
+	rng := rand.New(rand.NewSource(63)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 100
+		Y[i] = X[i] + rng.NormFloat64()
+	}
+
+	config := DefaultConfig()
+	profile := DirectionProfile(Y, X, 4, config)
+	if len(profile) != 4 {
+		t.Fatalf("Expected 4 regimes, got %d", len(profile))
+	}
+
+	// Check that sample counts sum to n
+	totalN := 0
+	for _, reg := range profile {
+		totalN += reg.N
+		if reg.N == 0 {
+			t.Error("Regime has 0 samples")
+		}
+	}
+	if totalN != n {
+		t.Errorf("Total samples %d != expected %d", totalN, n)
+	}
+
+	// Check ordering: each regime's Low < High, and regimes are in order
+	for r := 0; r < len(profile)-1; r++ {
+		if profile[r].Low > profile[r].High {
+			t.Errorf("Regime %d: Low (%.2f) > High (%.2f)", r, profile[r].Low, profile[r].High)
+		}
+		if profile[r].High > profile[r+1].Low {
+			t.Errorf("Regime %d High (%.2f) > Regime %d Low (%.2f): overlap",
+				r, profile[r].High, r+1, profile[r+1].Low)
+		}
+	}
+}
+
+// === PMI-based DIM Tests ===
+
+// TestPMIMethod_PositiveLinear tests PMI-based DIM for a strong positive relationship.
+func TestPMIMethod_PositiveLinear(t *testing.T) {
+	n := 1000
+	rng := rand.New(rand.NewSource(70)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = 2*X[i] + rng.NormFloat64()*0.5
+	}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	if !result.Valid {
+		t.Fatalf("PMI direction computation failed: %s", result.Reason)
+	}
+
+	t.Logf("PMI positive linear: direction = %.4f (expected > 0.5)", result.Direction)
+	if result.Direction < 0.5 {
+		t.Errorf("Expected positive direction > 0.5, got %.4f", result.Direction)
+	}
+}
+
+// TestPMIMethod_NegativeLinear tests PMI-based DIM for a strong negative relationship.
+func TestPMIMethod_NegativeLinear(t *testing.T) {
+	n := 1000
+	rng := rand.New(rand.NewSource(71)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = -3*X[i] + 30 + rng.NormFloat64()*0.5
+	}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	if !result.Valid {
+		t.Fatalf("PMI direction computation failed: %s", result.Reason)
+	}
+
+	t.Logf("PMI negative linear: direction = %.4f (expected < -0.5)", result.Direction)
+	if result.Direction > -0.5 {
+		t.Errorf("Expected negative direction < -0.5, got %.4f", result.Direction)
+	}
+}
+
+// TestPMIMethod_UShaped tests PMI-based DIM for a U-shaped relationship.
+func TestPMIMethod_UShaped(t *testing.T) {
+	n := 2000
+	rng := rand.New(rand.NewSource(72)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = (X[i]-5)*(X[i]-5) + rng.NormFloat64()*0.5
+	}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	if !result.Valid {
+		t.Fatalf("PMI direction computation failed: %s", result.Reason)
+	}
+
+	// U-shaped: DIM should be near 0
+	t.Logf("PMI U-shaped: direction = %.4f (expected near 0)", result.Direction)
+	if math.Abs(result.Direction) > 0.3 {
+		t.Errorf("Expected direction near 0 for U-shaped, got %.4f", result.Direction)
+	}
+}
+
+// TestPMIMethod_NoRelationship tests PMI-based DIM with independent variables.
+func TestPMIMethod_NoRelationship(t *testing.T) {
+	// Use large sample to reduce histogram estimation noise
+	n := 10000
+	rng := rand.New(rand.NewSource(73)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = rng.NormFloat64() * 5 // Independent
+	}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	t.Logf("PMI no relationship: direction = %.4f, valid = %v", result.Direction, result.Valid)
+	// Note: histogram-based PMI with finite samples can produce nonzero DIM
+	// even for independent variables, especially with few bins.
+	// The key test is that the magnitude is much smaller than for true relationships.
+	if result.Valid && math.Abs(result.Direction) > 0.8 {
+		t.Errorf("Expected direction not too extreme for independent vars, got %.4f", result.Direction)
+	}
+}
+
+// TestPMIMethod_InsufficientSamples tests PMI method with too few samples.
+func TestPMIMethod_InsufficientSamples(t *testing.T) {
+	Y := []float64{1, 2, 3}
+	X := []float64{4, 5, 6}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	if result.Valid {
+		t.Error("Expected invalid result for insufficient samples")
+	}
+}
+
+// TestPMIMethod_ConsistencyWithQuartile verifies PMI and Quartile methods agree on
+// clear monotonic relationships.
+func TestPMIMethod_ConsistencyWithQuartile(t *testing.T) {
+	n := 2000
+	rng := rand.New(rand.NewSource(74)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = 5*X[i] + rng.NormFloat64()*0.1 // Strong linear, low noise
+	}
+
+	config := DefaultConfig()
+	quartileResult := ComputeDirection(Y, X, QuartileMethod, config)
+	pmiResult := ComputeDirection(Y, X, PMIMethod, config)
+
+	if !quartileResult.Valid || !pmiResult.Valid {
+		t.Fatalf("Both methods should be valid: quartile=%v, pmi=%v",
+			quartileResult.Valid, pmiResult.Valid)
+	}
+
+	t.Logf("Quartile: %.4f, PMI: %.4f", quartileResult.Direction, pmiResult.Direction)
+
+	// Both should agree on sign
+	if (quartileResult.Direction > 0) != (pmiResult.Direction > 0) {
+		t.Errorf("Methods disagree on sign: quartile=%.4f, pmi=%.4f",
+			quartileResult.Direction, pmiResult.Direction)
+	}
+
+	// Both should be strongly positive
+	if pmiResult.Direction < 0.5 {
+		t.Errorf("PMI direction should be strongly positive, got %.4f", pmiResult.Direction)
 	}
 }

@@ -135,11 +135,11 @@ func ExampleComputeConflicts() {
 
 	conflicts := scic.ComputeConflicts(directions, 2)
 
-	// Conflict index: 0 = maximum conflict (opposite), 1 = no conflict (same)
+	// Conflict index: 0 = no conflict (same direction), 1 = maximum conflict (opposite)
 	fmt.Printf("Conflict (0,1): %.2f\n", conflicts["0,1"])
 	fmt.Printf("Interpretation: %s\n", interpretConflict(conflicts["0,1"]))
 	// Output:
-	// Conflict (0,1): 0.00
+	// Conflict (0,1): 1.00
 	// Interpretation: opposing effects
 }
 
@@ -344,7 +344,7 @@ func ExampleDecompose_duplicatedRedundancy() {
 	// Redundant: 100%
 	// Unique: 0%
 	// Synergistic: 0%
-	// Conflict: 1.00 (same direction)
+	// Conflict: 0.00 (same direction)
 }
 
 // === Real-World Inspired Examples ===
@@ -641,9 +641,9 @@ func interpretDirection(d float64) string {
 // interpretConflict converts a conflict value to a human-readable string.
 func interpretConflict(c float64) string {
 	switch {
-	case c < 0.3:
-		return "opposing effects"
 	case c > 0.7:
+		return "opposing effects"
+	case c < 0.3:
 		return "aligned effects"
 	default:
 		return "mixed effects"
@@ -662,6 +662,108 @@ func interpretConfidence(c float64) string {
 	default:
 		return "low reliability"
 	}
+}
+
+// === DirectionProfile Examples ===
+
+// ExampleDirectionProfile demonstrates using DirectionProfile to detect
+// non-monotonic relationships where overall direction is near zero.
+func ExampleDirectionProfile() {
+	// U-shaped: Y = (X-5)^2 → overall direction ≈ 0
+	// But DirectionProfile reveals: left half inhibitory, right half facilitative
+	n := 2000
+	rng := rand.New(rand.NewSource(60)) //nolint:gosec // deterministic
+
+	Y := make([]float64, n)
+	X := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = (X[i]-5)*(X[i]-5) + rng.NormFloat64()*0.5
+	}
+
+	config := scic.DefaultConfig()
+	config.MinSamplesPerQuartile = 10
+
+	// Overall direction is near zero (non-monotonic)
+	overall := scic.ComputeDirection(Y, X, scic.QuartileMethod, config)
+	fmt.Printf("Overall direction: %s\n", interpretDirection(overall.Direction))
+
+	// DirectionProfile reveals the sign change
+	profile := scic.DirectionProfile(Y, X, 2, config)
+	fmt.Printf("Left regime [X < 5]:  %s\n", interpretDirection(profile[0].Direction))
+	fmt.Printf("Right regime [X > 5]: %s\n", interpretDirection(profile[1].Direction))
+	fmt.Println("Conclusion: non-monotonic relationship detected")
+	// Output:
+	// Overall direction: neutral
+	// Left regime [X < 5]:  inhibitory
+	// Right regime [X > 5]: facilitative
+	// Conclusion: non-monotonic relationship detected
+}
+
+// ExampleDirectionProfile_thresholdDetection demonstrates detecting a
+// regime change at a threshold using DirectionProfile.
+func ExampleDirectionProfile_thresholdDetection() {
+	// System with sign change at threshold = 5
+	// Below 5: Y increases with X
+	// Above 5: Y decreases with X
+	n := 2000
+	rng := rand.New(rand.NewSource(61)) //nolint:gosec // deterministic
+
+	Y := make([]float64, n)
+	X := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		noise := rng.NormFloat64() * 0.3
+		if X[i] < 5 {
+			Y[i] = 2*X[i] + noise
+		} else {
+			Y[i] = -2*X[i] + 20 + noise
+		}
+	}
+
+	config := scic.DefaultConfig()
+	config.MinSamplesPerQuartile = 10
+
+	profile := scic.DirectionProfile(Y, X, 2, config)
+	fmt.Printf("Below threshold: %s\n", interpretDirection(profile[0].Direction))
+	fmt.Printf("Above threshold: %s\n", interpretDirection(profile[1].Direction))
+	fmt.Println("Conclusion: regime-dependent causality detected")
+	// Output:
+	// Below threshold: facilitative
+	// Above threshold: inhibitory
+	// Conclusion: regime-dependent causality detected
+}
+
+// === PMI-based DIM Examples ===
+
+// ExampleComputeDirection_pmiMethod demonstrates using the PMI-based DIM
+// (Definition 2.2) for direction estimation. PMI method uses the full
+// joint distribution p(Y,X) rather than just quartile comparison.
+func ExampleComputeDirection_pmiMethod() {
+	// Strong positive relationship
+	n := 2000
+	rng := rand.New(rand.NewSource(70)) //nolint:gosec // deterministic
+
+	Y := make([]float64, n)
+	X := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = 3*X[i] + rng.NormFloat64()*0.5
+	}
+
+	config := scic.DefaultConfig()
+
+	// Compare PMI with Quartile
+	quartile := scic.ComputeDirection(Y, X, scic.QuartileMethod, config)
+	pmi := scic.ComputeDirection(Y, X, scic.PMIMethod, config)
+
+	fmt.Printf("Quartile: %s\n", interpretDirection(quartile.Direction))
+	fmt.Printf("PMI:      %s\n", interpretDirection(pmi.Direction))
+	fmt.Println("Both methods agree on monotonic relationships")
+	// Output:
+	// Quartile: facilitative
+	// PMI:      facilitative
+	// Both methods agree on monotonic relationships
 }
 
 // === Edge Case Examples ===

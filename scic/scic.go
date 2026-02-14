@@ -19,6 +19,7 @@ import (
 	"math/rand"
 	"sort"
 
+	"github.com/causalgo/causalgo/internal/histogram"
 	"github.com/causalgo/causalgo/surd"
 )
 
@@ -34,6 +35,11 @@ const (
 
 	// GradientMethod estimates direction via local gradient (for smooth relationships).
 	GradientMethod
+
+	// PMIMethod computes DIM using pointwise mutual information (Definition 2.2).
+	// This is the theoretical ideal: DIM = E[sign(δ_Y(x)) · pmi(Y,x)] / I(Y;X).
+	// More accurate than QuartileMethod but requires histogram discretization.
+	PMIMethod
 )
 
 // Config contains parameters for SCIC analysis.
@@ -82,8 +88,8 @@ type Result struct {
 
 	// Conflicts maps variable pair keys to their conflict index [0, 1].
 	// Key format: "0,1" for pair of variables 0 and 1.
-	// 0 = maximum conflict (opposite directions of equal magnitude)
-	// 1 = no conflict (same direction)
+	// 0 = no conflict (same direction)
+	// 1 = maximum conflict (opposite directions of equal magnitude)
 	Conflicts map[string]float64
 
 	// Confidence maps variable keys to statistical confidence [0, 1].
@@ -163,10 +169,18 @@ func Decompose(Y []float64, X [][]float64, config Config) (*Result, error) { //n
 	}
 
 	// Step 3: Compute directions for variable combinations (pairs)
+	// Use MI-weighted aggregation: variables with higher MI get more weight
 	for i := 0; i < p; i++ {
 		for j := i + 1; j < p; j++ {
 			key := fmt.Sprintf("%d,%d", i, j)
-			aggDir := aggregateDirections(directions[fmt.Sprintf("%d", i)], directions[fmt.Sprintf("%d", j)])
+			keyI := fmt.Sprintf("%d", i)
+			keyJ := fmt.Sprintf("%d", j)
+			miI := surdResult.MutualInfo[keyI]
+			miJ := surdResult.MutualInfo[keyJ]
+			aggDir := aggregateDirectionsWeighted(
+				[]float64{directions[keyI], directions[keyJ]},
+				[]float64{miI, miJ},
+			)
 			directions[key] = aggDir
 		}
 	}
@@ -211,6 +225,8 @@ func ComputeDirection(Y, X []float64, method DirectionMethod, config Config) Dir
 		return computeMedianSplitDirection(Y, X, config)
 	case GradientMethod:
 		return computeGradientDirection(Y, X, config)
+	case PMIMethod:
+		return computePMIDirection(Y, X, config)
 	default:
 		return computeQuartileDirection(Y, X, config)
 	}
@@ -356,10 +372,137 @@ func computeGradientDirection(Y, X []float64, config Config) DirectionResult { /
 	return DirectionResult{Direction: corr, Valid: true}
 }
 
+// computePMIDirection computes DIM using pointwise mutual information (Definition 2.2).
+//
+// DIM(Y; X) = Σ_x sign(δ_Y(x)) · C(x) / I(Y; X)
+//
+// Where C(x) = p(x) · D_KL(p(Y|X=x) ‖ p(Y)) is the per-source-state MI contribution.
+// This uses histogram discretization consistent with SURD.
+func computePMIDirection(Y, X []float64, config Config) DirectionResult { //nolint:gocritic // Y/X are standard mathematical notation
+	n := len(Y)
+	if n < 20 {
+		return DirectionResult{Valid: false, Reason: "insufficient samples for PMI method"}
+	}
+
+	// Determine number of bins
+	bins := 10
+	if len(config.Bins) > 0 && config.Bins[0] > 0 {
+		bins = config.Bins[0]
+	}
+
+	// Build 2D histogram of (X, Y) using internal/histogram
+	data := make([][]float64, n)
+	for i := range data {
+		data[i] = []float64{X[i], Y[i]}
+	}
+
+	hist, err := histogram.NewNDHistogram(data, []int{bins, bins})
+	if err != nil {
+		return DirectionResult{Valid: false, Reason: fmt.Sprintf("histogram error: %v", err)}
+	}
+
+	probs := hist.Probabilities()
+
+	// Compute marginals p(x), p(y) and conditional means E[Y | X = x_j]
+	pX := make([]float64, bins)
+	pY := make([]float64, bins)
+	for j := 0; j < bins; j++ {
+		for k := 0; k < bins; k++ {
+			pX[j] += probs[j*bins+k]
+			pY[k] += probs[j*bins+k]
+		}
+	}
+
+	// Compute bin centers for Y (needed for conditional mean)
+	minY, maxY := Y[0], Y[0]
+	for _, y := range Y {
+		if y < minY {
+			minY = y
+		}
+		if y > maxY {
+			maxY = y
+		}
+	}
+	if maxY == minY {
+		maxY += 1e-10
+	}
+
+	yCenters := make([]float64, bins)
+	for k := 0; k < bins; k++ {
+		yCenters[k] = minY + (float64(k)+0.5)*(maxY-minY)/float64(bins)
+	}
+
+	// Conditional mean: E[Y | X = x_j]
+	condMeanY := make([]float64, bins)
+	for j := 0; j < bins; j++ {
+		if pX[j] < 1e-15 {
+			continue
+		}
+		for k := 0; k < bins; k++ {
+			condMeanY[j] += (probs[j*bins+k] / pX[j]) * yCenters[k]
+		}
+	}
+
+	// Compute sign(δ_Y(x_j)) for each X bin
+	// δ_Y(x_j) = E[Y | X > x_j] - E[Y | X < x_j]
+	deltaSign := make([]float64, bins)
+	for j := 0; j < bins; j++ {
+		sumAbove, wAbove := 0.0, 0.0
+		for m := j + 1; m < bins; m++ {
+			sumAbove += pX[m] * condMeanY[m]
+			wAbove += pX[m]
+		}
+		sumBelow, wBelow := 0.0, 0.0
+		for m := 0; m < j; m++ {
+			sumBelow += pX[m] * condMeanY[m]
+			wBelow += pX[m]
+		}
+		if wAbove > 1e-15 && wBelow > 1e-15 {
+			delta := (sumAbove / wAbove) - (sumBelow / wBelow)
+			if delta > 0 {
+				deltaSign[j] = 1.0
+			} else if delta < 0 {
+				deltaSign[j] = -1.0
+			}
+		}
+	}
+
+	// Compute C(x_j) = p(x_j) · D_KL(p(Y|X=x_j) ‖ p(Y))
+	cX := make([]float64, bins)
+	totalMI := 0.0
+	for j := 0; j < bins; j++ {
+		if pX[j] < 1e-15 {
+			continue
+		}
+		kl := 0.0
+		for k := 0; k < bins; k++ {
+			pYgivenX := probs[j*bins+k] / pX[j]
+			if pYgivenX > 1e-15 && pY[k] > 1e-15 {
+				kl += pYgivenX * math.Log2(pYgivenX/pY[k])
+			}
+		}
+		cX[j] = pX[j] * kl
+		totalMI += cX[j]
+	}
+
+	if totalMI < 1e-15 {
+		return DirectionResult{Direction: 0, Valid: true, Reason: "no mutual information"}
+	}
+
+	// DIM = Σ sign(δ_Y(x_j)) · C(x_j) / I(Y;X)
+	dim := 0.0
+	for j := 0; j < bins; j++ {
+		dim += deltaSign[j] * cX[j]
+	}
+	dim /= totalMI
+
+	return DirectionResult{Direction: clamp(dim, -1, 1), Valid: true}
+}
+
 // ComputeConflicts calculates conflict indices for all variable pairs.
 //
 // The conflict index measures whether two variables have opposing directional
-// effects on the target. Low conflict (near 0) indicates opposite effects.
+// effects on the target. High conflict (near 1) indicates opposite effects.
 func ComputeConflicts(directions map[string]float64, numVars int) map[string]float64 {
 	conflicts := make(map[string]float64)
 
@@ -381,27 +524,121 @@ func ComputeConflicts(directions map[string]float64, numVars int) map[string]flo
 
 // computeConflict calculates the conflict index between two directions.
 //
-// Conflict = |d1 + d2| / (|d1| + |d2|)
-// Returns 1 if d1 or d2 is 0 (no conflict when one has no effect)
+// Conflict = 1 - |d1 + d2| / (|d1| + |d2|)
+// Returns 0 if d1 or d2 is 0 (no conflict when one has no effect)
 func computeConflict(d1, d2 float64) float64 {
 	absSum := math.Abs(d1) + math.Abs(d2)
 	if absSum < 1e-10 {
-		return 1.0 // No conflict when both have no effect
+		return 0.0 // No conflict when both have no effect
 	}
-	return math.Abs(d1+d2) / absSum
+	return 1.0 - math.Abs(d1+d2)/absSum
 }
 
-// aggregateDirections combines multiple directions into a single aggregate.
-// Uses simple averaging (could be extended to MI-weighted averaging).
-func aggregateDirections(directions ...float64) float64 {
+// aggregateDirectionsWeighted combines multiple directions using MI-weighted averaging.
+// Variables with higher mutual information contribute more to the aggregate direction.
+// Falls back to simple averaging if all weights are zero.
+func aggregateDirectionsWeighted(directions, weights []float64) float64 {
 	if len(directions) == 0 {
 		return 0
 	}
-	sum := 0.0
-	for _, d := range directions {
-		sum += d
+	totalWeight := 0.0
+	for _, w := range weights {
+		totalWeight += w
 	}
-	return sum / float64(len(directions))
+	if totalWeight < 1e-10 {
+		// Fallback to simple average if MI is negligible
+		sum := 0.0
+		for _, d := range directions {
+			sum += d
+		}
+		return sum / float64(len(directions))
+	}
+	weightedSum := 0.0
+	for i, d := range directions {
+		weightedSum += d * weights[i]
+	}
+	return weightedSum / totalWeight
+}
+
+// RegimeDirection contains the direction estimate within a specific regime
+// (segment) of the source variable's range.
+type RegimeDirection struct {
+	// Low and High define the range of X in this regime.
+	Low, High float64
+
+	// Direction is the estimated D_Q within this regime [-1, +1].
+	Direction float64
+
+	// Valid indicates if enough data was available in this regime.
+	Valid bool
+
+	// N is the number of samples in this regime.
+	N int
+}
+
+// DirectionProfile computes direction of Y with respect to X across
+// numRegimes equal-frequency segments of X. This reveals non-monotonic
+// patterns where the overall direction may be near zero but regime-specific
+// directions are strong.
+//
+// For example, Y = X² gives overall D_Q ≈ 0, but DirectionProfile with
+// 2 regimes reveals D_Q < 0 (left half) and D_Q > 0 (right half).
+//
+// numRegimes must be >= 2. Typical values: 2 for threshold detection,
+// 3-4 for general non-monotonicity exploration.
+func DirectionProfile(Y, X []float64, numRegimes int, config Config) []RegimeDirection { //nolint:gocritic // Y/X are standard mathematical notation
+	n := len(Y)
+	if n == 0 || numRegimes < 2 {
+		return nil
+	}
+
+	// Create indices sorted by X
+	indices := make([]int, n)
+	for i := range indices {
+		indices[i] = i
+	}
+	sort.Slice(indices, func(a, b int) bool {
+		return X[indices[a]] < X[indices[b]]
+	})
+
+	regimeSize := n / numRegimes
+	if regimeSize < config.MinSamplesPerQuartile*2 {
+		// Not enough data per regime for meaningful direction estimation
+		regimeSize = n / numRegimes // proceed anyway, mark invalid if too small
+	}
+
+	results := make([]RegimeDirection, numRegimes)
+
+	for r := 0; r < numRegimes; r++ {
+		start := r * regimeSize
+		end := (r + 1) * regimeSize
+		if r == numRegimes-1 {
+			end = n // last regime gets remaining samples
+		}
+
+		regimeIndices := indices[start:end]
+		regimeN := len(regimeIndices)
+
+		// Extract Y and X for this regime
+		yRegime := make([]float64, regimeN)
+		xRegime := make([]float64, regimeN)
+		for i, idx := range regimeIndices {
+			yRegime[i] = Y[idx]
+			xRegime[i] = X[idx]
+		}
+
+		results[r] = RegimeDirection{
+			Low:  xRegime[0],
+			High: xRegime[regimeN-1],
+			N:    regimeN,
+		}
+
+		dirResult := ComputeDirection(yRegime, xRegime, config.DirectionMethod, config)
+		results[r].Direction = dirResult.Direction
+		results[r].Valid = dirResult.Valid
+	}
+
+	return results
 }
 
 // bootstrapConfidence estimates confidence via bootstrap resampling.
