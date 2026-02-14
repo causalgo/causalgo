@@ -18,7 +18,7 @@ High-performance library for causal analysis and discovery in Go. Implements ori
 
 ## Features ✨
 
-- 🎯 **SCIC™ Algorithm** - Signed Causal Information Components for directional causality (94.6% test coverage)
+- 🎯 **SCIC™ Algorithm** - Signed Causal Information Components for directional causality (~95% test coverage)
 - 🧠 **SURD Algorithm** - Synergistic-Unique-Redundant Decomposition (97.2% test coverage)
 - 📊 **Information Theory** - Entropy, mutual information, conditional entropy
 - 🔍 **VarSelect** - LASSO-based variable selection for causal ordering
@@ -34,7 +34,7 @@ High-performance library for causal analysis and discovery in Go. Implements ori
 
 | Algorithm | Status | Test Coverage | Description |
 |-----------|--------|---------------|-------------|
-| **SCIC™** | ✅ Implemented | 94.6% | Signed Causal Information Components (original contribution) |
+| **SCIC™** | ✅ Implemented | ~95% | Signed Causal Information Components (original contribution) |
 | **SURD** | ✅ Implemented | 97.2% | Information-theoretic decomposition ([Nature 2024](https://doi.org/10.1038/s41467-024-53373-4)) |
 | **VarSelect** | ✅ Implemented | ~85% | LASSO-based recursive variable selection |
 
@@ -283,9 +283,9 @@ causalgo/
 ├── surd/                      # SURD algorithm (97.2% coverage) — PUBLIC API
 │   ├── surd.go               # Synergistic-Unique-Redundant Decomposition
 │   └── example_test.go       # Testable examples
-├── scic/                      # SCIC™ algorithm (94.6% coverage) — PUBLIC API
+├── scic/                      # SCIC™ algorithm (~95% coverage) — PUBLIC API
 │   ├── scic.go               # Signed Causal Information Components
-│   └── example_test.go       # 16 professional testable examples
+│   └── example_test.go       # 18 professional testable examples
 ├── varselect/                 # VarSelect algorithm (~85% coverage) — PUBLIC API
 │   └── varselect.go          # LASSO-based causal ordering
 ├── matdata/                   # MATLAB utilities — PUBLIC API
@@ -374,6 +374,7 @@ Optimized for both small-scale analysis and large time series:
 - Working with **complex nonlinear systems**
 - Need **confidence estimates** (bootstrap sign stability)
 - Want to detect **conflicting relationships**
+- Need **regime detection** in non-monotonic systems (DirectionProfile)
 - Care about **magnitude AND direction** of causal effects
 - Time complexity: O(n × p × B) where B = bootstrap samples
 
@@ -400,7 +401,8 @@ Optimized for both small-scale analysis and large time series:
 ## Documentation
 
 - **Examples**: See [examples in godoc](https://pkg.go.dev/github.com/causalgo/causalgo)
-- **SCIC Examples**: [scic/example_test.go](scic/example_test.go) — 16 professional testable examples
+- **SCIC Guide**: [docs/SCIC.md](docs/SCIC.md) — Quick start, configuration, interpreting results
+- **SCIC Examples**: [scic/example_test.go](scic/example_test.go) — 18 professional testable examples
 - **SURD Paper**: [docs/SURD_paper.md](docs/SURD_paper.md) — Reference implementation details
 - **Visualization**: [visualization/](visualization/)
 - **MATLAB Integration**: [matdata/](matdata/)
