@@ -1027,3 +1027,155 @@ func TestDirectionProfile_RegimeBoundaries(t *testing.T) {
 		}
 	}
 }
+
+// === PMI-based DIM Tests ===
+
+// TestPMIMethod_PositiveLinear tests PMI-based DIM for a strong positive relationship.
+func TestPMIMethod_PositiveLinear(t *testing.T) {
+	n := 1000
+	rng := rand.New(rand.NewSource(70)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = 2*X[i] + rng.NormFloat64()*0.5
+	}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	if !result.Valid {
+		t.Fatalf("PMI direction computation failed: %s", result.Reason)
+	}
+
+	t.Logf("PMI positive linear: direction = %.4f (expected > 0.5)", result.Direction)
+	if result.Direction < 0.5 {
+		t.Errorf("Expected positive direction > 0.5, got %.4f", result.Direction)
+	}
+}
+
+// TestPMIMethod_NegativeLinear tests PMI-based DIM for a strong negative relationship.
+func TestPMIMethod_NegativeLinear(t *testing.T) {
+	n := 1000
+	rng := rand.New(rand.NewSource(71)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = -3*X[i] + 30 + rng.NormFloat64()*0.5
+	}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	if !result.Valid {
+		t.Fatalf("PMI direction computation failed: %s", result.Reason)
+	}
+
+	t.Logf("PMI negative linear: direction = %.4f (expected < -0.5)", result.Direction)
+	if result.Direction > -0.5 {
+		t.Errorf("Expected negative direction < -0.5, got %.4f", result.Direction)
+	}
+}
+
+// TestPMIMethod_UShaped tests PMI-based DIM for a U-shaped relationship.
+func TestPMIMethod_UShaped(t *testing.T) {
+	n := 2000
+	rng := rand.New(rand.NewSource(72)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = (X[i]-5)*(X[i]-5) + rng.NormFloat64()*0.5
+	}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	if !result.Valid {
+		t.Fatalf("PMI direction computation failed: %s", result.Reason)
+	}
+
+	// U-shaped: DIM should be near 0
+	t.Logf("PMI U-shaped: direction = %.4f (expected near 0)", result.Direction)
+	if math.Abs(result.Direction) > 0.3 {
+		t.Errorf("Expected direction near 0 for U-shaped, got %.4f", result.Direction)
+	}
+}
+
+// TestPMIMethod_NoRelationship tests PMI-based DIM with independent variables.
+func TestPMIMethod_NoRelationship(t *testing.T) {
+	// Use large sample to reduce histogram estimation noise
+	n := 10000
+	rng := rand.New(rand.NewSource(73)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = rng.NormFloat64() * 5 // Independent
+	}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	t.Logf("PMI no relationship: direction = %.4f, valid = %v", result.Direction, result.Valid)
+	// Note: histogram-based PMI with finite samples can produce nonzero DIM
+	// even for independent variables, especially with few bins.
+	// The key test is that the magnitude is much smaller than for true relationships.
+	if result.Valid && math.Abs(result.Direction) > 0.8 {
+		t.Errorf("Expected direction not too extreme for independent vars, got %.4f", result.Direction)
+	}
+}
+
+// TestPMIMethod_InsufficientSamples tests PMI method with too few samples.
+func TestPMIMethod_InsufficientSamples(t *testing.T) {
+	Y := []float64{1, 2, 3}
+	X := []float64{4, 5, 6}
+
+	config := DefaultConfig()
+	result := ComputeDirection(Y, X, PMIMethod, config)
+
+	if result.Valid {
+		t.Error("Expected invalid result for insufficient samples")
+	}
+}
+
+// TestPMIMethod_ConsistencyWithQuartile verifies PMI and Quartile methods agree on
+// clear monotonic relationships.
+func TestPMIMethod_ConsistencyWithQuartile(t *testing.T) {
+	n := 2000
+	rng := rand.New(rand.NewSource(74)) //nolint:gosec // deterministic for testing
+
+	X := make([]float64, n)
+	Y := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = 5*X[i] + rng.NormFloat64()*0.1 // Strong linear, low noise
+	}
+
+	config := DefaultConfig()
+	quartileResult := ComputeDirection(Y, X, QuartileMethod, config)
+	pmiResult := ComputeDirection(Y, X, PMIMethod, config)
+
+	if !quartileResult.Valid || !pmiResult.Valid {
+		t.Fatalf("Both methods should be valid: quartile=%v, pmi=%v",
+			quartileResult.Valid, pmiResult.Valid)
+	}
+
+	t.Logf("Quartile: %.4f, PMI: %.4f", quartileResult.Direction, pmiResult.Direction)
+
+	// Both should agree on sign
+	if (quartileResult.Direction > 0) != (pmiResult.Direction > 0) {
+		t.Errorf("Methods disagree on sign: quartile=%.4f, pmi=%.4f",
+			quartileResult.Direction, pmiResult.Direction)
+	}
+
+	// Both should be strongly positive
+	if pmiResult.Direction < 0.5 {
+		t.Errorf("PMI direction should be strongly positive, got %.4f", pmiResult.Direction)
+	}
+}

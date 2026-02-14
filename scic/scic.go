@@ -19,6 +19,7 @@ import (
 	"math/rand"
 	"sort"
 
+	"github.com/causalgo/causalgo/internal/histogram"
 	"github.com/causalgo/causalgo/surd"
 )
 
@@ -34,6 +35,11 @@ const (
 
 	// GradientMethod estimates direction via local gradient (for smooth relationships).
 	GradientMethod
+
+	// PMIMethod computes DIM using pointwise mutual information (Definition 2.2).
+	// This is the theoretical ideal: DIM = E[sign(δ_Y(x)) · pmi(Y,x)] / I(Y;X).
+	// More accurate than QuartileMethod but requires histogram discretization.
+	PMIMethod
 )
 
 // Config contains parameters for SCIC analysis.
@@ -219,6 +225,8 @@ func ComputeDirection(Y, X []float64, method DirectionMethod, config Config) Dir
 		return computeMedianSplitDirection(Y, X, config)
 	case GradientMethod:
 		return computeGradientDirection(Y, X, config)
+	case PMIMethod:
+		return computePMIDirection(Y, X, config)
 	default:
 		return computeQuartileDirection(Y, X, config)
 	}
@@ -362,6 +370,133 @@ func computeGradientDirection(Y, X []float64, config Config) DirectionResult { /
 	}
 
 	return DirectionResult{Direction: corr, Valid: true}
+}
+
+// computePMIDirection computes DIM using pointwise mutual information (Definition 2.2).
+//
+// DIM(Y; X) = Σ_x sign(δ_Y(x)) · C(x) / I(Y; X)
+//
+// Where C(x) = p(x) · D_KL(p(Y|X=x) ‖ p(Y)) is the per-source-state MI contribution.
+// This uses histogram discretization consistent with SURD.
+func computePMIDirection(Y, X []float64, config Config) DirectionResult { //nolint:gocritic // Y/X are standard mathematical notation
+	n := len(Y)
+	if n < 20 {
+		return DirectionResult{Valid: false, Reason: "insufficient samples for PMI method"}
+	}
+
+	// Determine number of bins
+	bins := 10
+	if len(config.Bins) > 0 && config.Bins[0] > 0 {
+		bins = config.Bins[0]
+	}
+
+	// Build 2D histogram of (X, Y) using internal/histogram
+	data := make([][]float64, n)
+	for i := range data {
+		data[i] = []float64{X[i], Y[i]}
+	}
+
+	hist, err := histogram.NewNDHistogram(data, []int{bins, bins})
+	if err != nil {
+		return DirectionResult{Valid: false, Reason: fmt.Sprintf("histogram error: %v", err)}
+	}
+
+	probs := hist.Probabilities()
+
+	// Compute marginals p(x), p(y) and conditional means E[Y | X = x_j]
+	pX := make([]float64, bins)
+	pY := make([]float64, bins)
+	for j := 0; j < bins; j++ {
+		for k := 0; k < bins; k++ {
+			pX[j] += probs[j*bins+k]
+			pY[k] += probs[j*bins+k]
+		}
+	}
+
+	// Compute bin centers for Y (needed for conditional mean)
+	minY, maxY := Y[0], Y[0]
+	for _, y := range Y {
+		if y < minY {
+			minY = y
+		}
+		if y > maxY {
+			maxY = y
+		}
+	}
+	if maxY == minY {
+		maxY += 1e-10
+	}
+
+	yCenters := make([]float64, bins)
+	for k := 0; k < bins; k++ {
+		yCenters[k] = minY + (float64(k)+0.5)*(maxY-minY)/float64(bins)
+	}
+
+	// Conditional mean: E[Y | X = x_j]
+	condMeanY := make([]float64, bins)
+	for j := 0; j < bins; j++ {
+		if pX[j] < 1e-15 {
+			continue
+		}
+		for k := 0; k < bins; k++ {
+			condMeanY[j] += (probs[j*bins+k] / pX[j]) * yCenters[k]
+		}
+	}
+
+	// Compute sign(δ_Y(x_j)) for each X bin
+	// δ_Y(x_j) = E[Y | X > x_j] - E[Y | X < x_j]
+	deltaSign := make([]float64, bins)
+	for j := 0; j < bins; j++ {
+		sumAbove, wAbove := 0.0, 0.0
+		for m := j + 1; m < bins; m++ {
+			sumAbove += pX[m] * condMeanY[m]
+			wAbove += pX[m]
+		}
+		sumBelow, wBelow := 0.0, 0.0
+		for m := 0; m < j; m++ {
+			sumBelow += pX[m] * condMeanY[m]
+			wBelow += pX[m]
+		}
+		if wAbove > 1e-15 && wBelow > 1e-15 {
+			delta := (sumAbove / wAbove) - (sumBelow / wBelow)
+			if delta > 0 {
+				deltaSign[j] = 1.0
+			} else if delta < 0 {
+				deltaSign[j] = -1.0
+			}
+		}
+	}
+
+	// Compute C(x_j) = p(x_j) · D_KL(p(Y|X=x_j) ‖ p(Y))
+	cX := make([]float64, bins)
+	totalMI := 0.0
+	for j := 0; j < bins; j++ {
+		if pX[j] < 1e-15 {
+			continue
+		}
+		kl := 0.0
+		for k := 0; k < bins; k++ {
+			pYgivenX := probs[j*bins+k] / pX[j]
+			if pYgivenX > 1e-15 && pY[k] > 1e-15 {
+				kl += pYgivenX * math.Log2(pYgivenX/pY[k])
+			}
+		}
+		cX[j] = pX[j] * kl
+		totalMI += cX[j]
+	}
+
+	if totalMI < 1e-15 {
+		return DirectionResult{Direction: 0, Valid: true, Reason: "no mutual information"}
+	}
+
+	// DIM = Σ sign(δ_Y(x_j)) · C(x_j) / I(Y;X)
+	dim := 0.0
+	for j := 0; j < bins; j++ {
+		dim += deltaSign[j] * cX[j]
+	}
+	dim /= totalMI
+
+	return DirectionResult{Direction: clamp(dim, -1, 1), Valid: true}
 }
 
 // ComputeConflicts calculates conflict indices for all variable pairs.

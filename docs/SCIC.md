@@ -84,6 +84,7 @@ config := scic.Config{
 | `QuartileMethod` | Default. Robust to outliers. |
 | `MedianSplitMethod` | Faster, less robust. |
 | `GradientMethod` | Smooth non-linear relationships. |
+| `PMIMethod` | Theoretical ideal (Definition 2.2). Uses full joint distribution. |
 
 ## Interpreting Results
 

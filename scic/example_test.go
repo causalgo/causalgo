@@ -734,6 +734,38 @@ func ExampleDirectionProfile_thresholdDetection() {
 	// Conclusion: regime-dependent causality detected
 }
 
+// === PMI-based DIM Examples ===
+
+// ExampleComputeDirection_pmiMethod demonstrates using the PMI-based DIM
+// (Definition 2.2) for direction estimation. PMI method uses the full
+// joint distribution p(Y,X) rather than just quartile comparison.
+func ExampleComputeDirection_pmiMethod() {
+	// Strong positive relationship
+	n := 2000
+	rng := rand.New(rand.NewSource(70)) //nolint:gosec // deterministic
+
+	Y := make([]float64, n)
+	X := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = rng.Float64() * 10
+		Y[i] = 3*X[i] + rng.NormFloat64()*0.5
+	}
+
+	config := scic.DefaultConfig()
+
+	// Compare PMI with Quartile
+	quartile := scic.ComputeDirection(Y, X, scic.QuartileMethod, config)
+	pmi := scic.ComputeDirection(Y, X, scic.PMIMethod, config)
+
+	fmt.Printf("Quartile: %s\n", interpretDirection(quartile.Direction))
+	fmt.Printf("PMI:      %s\n", interpretDirection(pmi.Direction))
+	fmt.Println("Both methods agree on monotonic relationships")
+	// Output:
+	// Quartile: facilitative
+	// PMI:      facilitative
+	// Both methods agree on monotonic relationships
+}
+
 // === Edge Case Examples ===
 
 // ExampleDecompose_nonMonotonicRelationship demonstrates SCIC behavior
