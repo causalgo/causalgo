@@ -141,10 +141,10 @@ func TestComputeConflict_OppositeDirections(t *testing.T) {
 
 	conflict := conflicts["0,1"]
 
-	// Opposite directions of similar magnitude should give low conflict
-	// Conflict = |0.9 + (-0.9)| / (|0.9| + |-0.9|) = 0 / 1.8 = 0
-	if conflict > 0.1 {
-		t.Errorf("Expected low conflict for opposite directions, got %f", conflict)
+	// Opposite directions of similar magnitude should give high conflict
+	// Conflict = 1 - |0.9 + (-0.9)| / (|0.9| + |-0.9|) = 1 - 0/1.8 = 1
+	if conflict < 0.9 {
+		t.Errorf("Expected high conflict for opposite directions, got %f", conflict)
 	}
 
 	t.Logf("Opposite directions conflict: %f", conflict)
@@ -162,10 +162,10 @@ func TestComputeConflict_SameDirections(t *testing.T) {
 
 	conflict := conflicts["0,1"]
 
-	// Same direction should give high conflict index (near 1)
-	// Conflict = |0.8 + 0.6| / (|0.8| + |0.6|) = 1.4 / 1.4 = 1
-	if conflict < 0.9 {
-		t.Errorf("Expected high conflict for same directions, got %f", conflict)
+	// Same direction should give low conflict index (near 0)
+	// Conflict = 1 - |0.8 + 0.6| / (|0.8| + |0.6|) = 1 - 1.4/1.4 = 0
+	if conflict > 0.1 {
+		t.Errorf("Expected low conflict for same directions, got %f", conflict)
 	}
 
 	t.Logf("Same directions conflict: %f", conflict)
@@ -183,8 +183,8 @@ func TestComputeConflict_MixedDirections(t *testing.T) {
 
 	conflict := conflicts["0,1"]
 
-	// Conflict = |0.8 + (-0.2)| / (|0.8| + |-0.2|) = 0.6 / 1.0 = 0.6
-	expectedConflict := 0.6
+	// Conflict = 1 - |0.8 + (-0.2)| / (|0.8| + |-0.2|) = 1 - 0.6/1.0 = 0.4
+	expectedConflict := 0.4
 	if math.Abs(conflict-expectedConflict) > 0.01 {
 		t.Errorf("Expected conflict %.2f, got %f", expectedConflict, conflict)
 	}
@@ -661,8 +661,8 @@ func TestPearsonCorrelation_EdgeCases(t *testing.T) {
 // TestComputeConflict_ZeroDenominator tests conflict with both directions zero.
 func TestComputeConflict_ZeroDenominator(t *testing.T) {
 	conflict := computeConflict(0, 0)
-	if conflict != 1.0 {
-		t.Errorf("Expected conflict=1.0 for zero directions, got %f", conflict)
+	if conflict != 0.0 {
+		t.Errorf("Expected conflict=0.0 for zero directions, got %f", conflict)
 	}
 }
 

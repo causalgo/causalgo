@@ -82,8 +82,8 @@ type Result struct {
 
 	// Conflicts maps variable pair keys to their conflict index [0, 1].
 	// Key format: "0,1" for pair of variables 0 and 1.
-	// 0 = maximum conflict (opposite directions of equal magnitude)
-	// 1 = no conflict (same direction)
+	// 0 = no conflict (same direction)
+	// 1 = maximum conflict (opposite directions of equal magnitude)
 	Conflicts map[string]float64
 
 	// Confidence maps variable keys to statistical confidence [0, 1].
@@ -359,7 +359,7 @@ func computeGradientDirection(Y, X []float64, config Config) DirectionResult { /
 // ComputeConflicts calculates conflict indices for all variable pairs.
 //
 // The conflict index measures whether two variables have opposing directional
-// effects on the target. Low conflict (near 0) indicates opposite effects.
+// effects on the target. High conflict (near 1) indicates opposite effects.
 func ComputeConflicts(directions map[string]float64, numVars int) map[string]float64 {
 	conflicts := make(map[string]float64)
 
@@ -381,14 +381,14 @@ func ComputeConflicts(directions map[string]float64, numVars int) map[string]flo
 
 // computeConflict calculates the conflict index between two directions.
 //
-// Conflict = |d1 + d2| / (|d1| + |d2|)
-// Returns 1 if d1 or d2 is 0 (no conflict when one has no effect)
+// Conflict = 1 - |d1 + d2| / (|d1| + |d2|)
+// Returns 0 if d1 or d2 is 0 (no conflict when one has no effect)
 func computeConflict(d1, d2 float64) float64 {
 	absSum := math.Abs(d1) + math.Abs(d2)
 	if absSum < 1e-10 {
-		return 1.0 // No conflict when both have no effect
+		return 0.0 // No conflict when both have no effect
 	}
-	return math.Abs(d1+d2) / absSum
+	return 1.0 - math.Abs(d1+d2)/absSum
 }
 
 // aggregateDirections combines multiple directions into a single aggregate.

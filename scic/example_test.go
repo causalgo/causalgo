@@ -135,11 +135,11 @@ func ExampleComputeConflicts() {
 
 	conflicts := scic.ComputeConflicts(directions, 2)
 
-	// Conflict index: 0 = maximum conflict (opposite), 1 = no conflict (same)
+	// Conflict index: 0 = no conflict (same direction), 1 = maximum conflict (opposite)
 	fmt.Printf("Conflict (0,1): %.2f\n", conflicts["0,1"])
 	fmt.Printf("Interpretation: %s\n", interpretConflict(conflicts["0,1"]))
 	// Output:
-	// Conflict (0,1): 0.00
+	// Conflict (0,1): 1.00
 	// Interpretation: opposing effects
 }
 
@@ -344,7 +344,7 @@ func ExampleDecompose_duplicatedRedundancy() {
 	// Redundant: 100%
 	// Unique: 0%
 	// Synergistic: 0%
-	// Conflict: 1.00 (same direction)
+	// Conflict: 0.00 (same direction)
 }
 
 // === Real-World Inspired Examples ===
@@ -641,9 +641,9 @@ func interpretDirection(d float64) string {
 // interpretConflict converts a conflict value to a human-readable string.
 func interpretConflict(c float64) string {
 	switch {
-	case c < 0.3:
-		return "opposing effects"
 	case c > 0.7:
+		return "opposing effects"
+	case c < 0.3:
 		return "aligned effects"
 	default:
 		return "mixed effects"

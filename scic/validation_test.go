@@ -9,7 +9,7 @@ import (
 // === Canonical System Generators ===
 
 // generateXORSystem creates Y = X1 XOR X2 (binary XOR)
-// Expected: high synergy, opposite directions for X1 and X2, high conflict.
+// Expected: high synergy, opposite directions for X1 and X2, high conflict (opposing effects).
 func generateXORSystem(n int, seed int64) ([]float64, [][]float64) {
 	rng := rand.New(rand.NewSource(seed)) //nolint:gosec // deterministic for testing
 
@@ -32,7 +32,7 @@ func generateXORSystem(n int, seed int64) ([]float64, [][]float64) {
 }
 
 // generateDuplicatedSystem creates Y = X1 = X2 (identical sources)
-// Expected: high redundancy, same direction for X1 and X2, low conflict.
+// Expected: high redundancy, same direction for X1 and X2, low conflict (aligned effects).
 func generateDuplicatedSystem(n int, seed int64) ([]float64, [][]float64) {
 	rng := rand.New(rand.NewSource(seed)) //nolint:gosec // deterministic for testing
 
@@ -198,9 +198,9 @@ func TestValidation_DuplicatedSystem(t *testing.T) {
 		t.Errorf("Expected positive direction[1] > 0.5, got %.4f", result.Directions["1"])
 	}
 
-	// Conflict should be high (near 1) since both have same direction
-	if result.Conflicts["0,1"] < 0.8 {
-		t.Errorf("Expected high conflict (same direction) > 0.8, got %.4f", result.Conflicts["0,1"])
+	// Conflict should be low (near 0) since both have same direction
+	if result.Conflicts["0,1"] > 0.2 {
+		t.Errorf("Expected low conflict (same direction) < 0.2, got %.4f", result.Conflicts["0,1"])
 	}
 }
 
@@ -286,9 +286,9 @@ func TestValidation_ConflictingSystem(t *testing.T) {
 		t.Errorf("Expected negative direction[1] < -0.3, got %.4f", result.Directions["1"])
 	}
 
-	// Conflict should be low (opposite directions)
-	if result.Conflicts["0,1"] > 0.4 {
-		t.Errorf("Expected low conflict (opposite directions) < 0.4, got %.4f", result.Conflicts["0,1"])
+	// Conflict should be high (opposite directions)
+	if result.Conflicts["0,1"] < 0.6 {
+		t.Errorf("Expected high conflict (opposite directions) > 0.6, got %.4f", result.Conflicts["0,1"])
 	}
 }
 
