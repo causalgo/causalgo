@@ -163,10 +163,18 @@ func Decompose(Y []float64, X [][]float64, config Config) (*Result, error) { //n
 	}
 
 	// Step 3: Compute directions for variable combinations (pairs)
+	// Use MI-weighted aggregation: variables with higher MI get more weight
 	for i := 0; i < p; i++ {
 		for j := i + 1; j < p; j++ {
 			key := fmt.Sprintf("%d,%d", i, j)
-			aggDir := aggregateDirections(directions[fmt.Sprintf("%d", i)], directions[fmt.Sprintf("%d", j)])
+			keyI := fmt.Sprintf("%d", i)
+			keyJ := fmt.Sprintf("%d", j)
+			miI := surdResult.MutualInfo[keyI]
+			miJ := surdResult.MutualInfo[keyJ]
+			aggDir := aggregateDirectionsWeighted(
+				[]float64{directions[keyI], directions[keyJ]},
+				[]float64{miI, miJ},
+			)
 			directions[key] = aggDir
 		}
 	}
@@ -391,17 +399,30 @@ func computeConflict(d1, d2 float64) float64 {
 	return 1.0 - math.Abs(d1+d2)/absSum
 }
 
-// aggregateDirections combines multiple directions into a single aggregate.
-// Uses simple averaging (could be extended to MI-weighted averaging).
-func aggregateDirections(directions ...float64) float64 {
+// aggregateDirectionsWeighted combines multiple directions using MI-weighted averaging.
+// Variables with higher mutual information contribute more to the aggregate direction.
+// Falls back to simple averaging if all weights are zero.
+func aggregateDirectionsWeighted(directions, weights []float64) float64 {
 	if len(directions) == 0 {
 		return 0
 	}
-	sum := 0.0
-	for _, d := range directions {
-		sum += d
+	totalWeight := 0.0
+	for _, w := range weights {
+		totalWeight += w
 	}
-	return sum / float64(len(directions))
+	if totalWeight < 1e-10 {
+		// Fallback to simple average if MI is negligible
+		sum := 0.0
+		for _, d := range directions {
+			sum += d
+		}
+		return sum / float64(len(directions))
+	}
+	weightedSum := 0.0
+	for i, d := range directions {
+		weightedSum += d * weights[i]
+	}
+	return weightedSum / totalWeight
 }
 
 // bootstrapConfidence estimates confidence via bootstrap resampling.

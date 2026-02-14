@@ -666,25 +666,36 @@ func TestComputeConflict_ZeroDenominator(t *testing.T) {
 	}
 }
 
-// TestAggregateDirections tests the aggregation function.
-func TestAggregateDirections(t *testing.T) {
+// TestAggregateDirectionsWeighted tests the MI-weighted aggregation function.
+func TestAggregateDirectionsWeighted(t *testing.T) {
 	// Empty should return 0
-	if agg := aggregateDirections(); agg != 0 {
+	if agg := aggregateDirectionsWeighted(nil, nil); agg != 0 {
 		t.Errorf("Expected 0 for empty, got %f", agg)
 	}
 
+	// Equal weights = simple average
+	agg := aggregateDirectionsWeighted([]float64{1.0, -1.0}, []float64{1.0, 1.0})
+	if agg != 0 {
+		t.Errorf("Expected 0 for equal weights (1, -1), got %f", agg)
+	}
+
+	// MI-weighted: variable with higher MI dominates
+	// dir=[+1, -1], weights=[9, 1] → weighted avg = (9 - 1)/10 = 0.8
+	agg = aggregateDirectionsWeighted([]float64{1.0, -1.0}, []float64{9.0, 1.0})
+	if math.Abs(agg-0.8) > 0.01 {
+		t.Errorf("Expected 0.8 for MI-weighted (9:1), got %f", agg)
+	}
+
+	// Zero weights fallback to simple average
+	agg = aggregateDirectionsWeighted([]float64{0.4, 0.6}, []float64{0, 0})
+	if math.Abs(agg-0.5) > 0.01 {
+		t.Errorf("Expected 0.5 for zero-weight fallback, got %f", agg)
+	}
+
 	// Single value
-	if agg := aggregateDirections(0.5); agg != 0.5 {
+	agg = aggregateDirectionsWeighted([]float64{0.5}, []float64{1.0})
+	if agg != 0.5 {
 		t.Errorf("Expected 0.5 for single value, got %f", agg)
-	}
-
-	// Multiple values (average)
-	if agg := aggregateDirections(1.0, -1.0); agg != 0 {
-		t.Errorf("Expected 0 for (1, -1), got %f", agg)
-	}
-
-	if agg := aggregateDirections(0.4, 0.6, 0.8); math.Abs(agg-0.6) > 0.01 {
-		t.Errorf("Expected 0.6 for (0.4, 0.6, 0.8), got %f", agg)
 	}
 }
 
