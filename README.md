@@ -24,7 +24,7 @@ High-performance library for causal analysis and discovery in Go. Implements ori
 - 🔍 **VarSelect** - LASSO-based variable selection for causal ordering
 - 📁 **MATLAB Support** - Native .mat file reading (v5, v7.3 HDF5)
 - 📈 **Visualization** - Publication-quality plots (PNG/SVG/PDF export)
-- ✅ **Validated** - 100% match with Python reference on real turbulence data
+- ✅ **Validated** - Matches Python reference on real turbulence data (0.1% tolerance)
 - ⚡ **Fast** - Optimized histograms and entropy calculations
 - 🔧 **Flexible** - Configurable bins, smoothing, thresholds
 - 🧪 **Well-Tested** - Extensive validation on synthetic and real datasets

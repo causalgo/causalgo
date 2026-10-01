@@ -1,6 +1,7 @@
 package scic
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"testing"
@@ -552,6 +553,7 @@ func TestMedianSplit_InsufficientSamples(t *testing.T) {
 // TestMedianSplit_ZeroVariance tests median split with zero variance (step function).
 func TestMedianSplit_ZeroVariance(t *testing.T) {
 	// Step function: Y=5 for X<10, Y=10 for X>=10 → both groups have zero stddev
+	// but means differ → deterministic positive effect, should return +1
 	Y := []float64{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10}
 	X := []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 
@@ -566,9 +568,113 @@ func TestMedianSplit_ZeroVariance(t *testing.T) {
 	t.Logf("MedianSplit zero variance: direction=%.4f, valid=%v, reason=%q",
 		result.Direction, result.Valid, result.Reason)
 
-	// Both groups have constant Y → zero dispersion → Valid=false
-	if result.Valid {
-		t.Error("Expected Valid=false for constant-within-group data")
+	if !result.Valid {
+		t.Errorf("Expected Valid=true for threshold function, got reason=%q", result.Reason)
+	}
+	if result.Direction != 1.0 {
+		t.Errorf("Expected direction=+1.0 for step function, got %.4f", result.Direction)
+	}
+}
+
+// TestThreshold_AllMethods verifies threshold Y=1{X>5} works with all direction methods.
+func TestThreshold_AllMethods(t *testing.T) {
+	n := 10000
+	Y := make([]float64, n)
+	X := make([]float64, n)
+	for i := 0; i < n; i++ {
+		X[i] = float64(i) / float64(n) * 10
+		if X[i] > 5 {
+			Y[i] = 1
+		}
+	}
+
+	methods := []struct {
+		name   string
+		method DirectionMethod
+	}{
+		{"Quartile+Robust", QuartileMethod},
+		{"MedianSplit+Robust", MedianSplitMethod},
+		{"Gradient", GradientMethod},
+		{"PMI", PMIMethod},
+	}
+
+	for _, m := range methods {
+		t.Run(m.name, func(t *testing.T) {
+			config := DefaultConfig()
+			config.Bins = []int{10}
+			result := ComputeDirection(Y, X, m.method, config)
+			t.Logf("%s: direction=%.3f valid=%v", m.name, result.Direction, result.Valid)
+
+			if !result.Valid {
+				t.Errorf("Expected Valid=true, got reason=%q", result.Reason)
+			}
+			if result.Direction < 0.5 {
+				t.Errorf("Expected positive direction > 0.5, got %.3f", result.Direction)
+			}
+		})
+	}
+}
+
+// TestXOR_NoCoinfFlip verifies XOR with default config doesn't give ±1 coin-flip.
+func TestXOR_NoCoinfFlip(t *testing.T) {
+	n := 100000
+	seeds := []int64{1, 2, 3, 42, 99}
+
+	for _, seed := range seeds {
+		t.Run(fmt.Sprintf("seed=%d", seed), func(t *testing.T) {
+			rng := rand.New(rand.NewSource(seed)) //nolint:gosec // G404: deterministic test
+			Y := make([]float64, n)
+			X := make([]float64, n)
+			for i := 0; i < n; i++ {
+				x1 := float64(rng.Intn(2))
+				x2 := float64(rng.Intn(2))
+				X[i] = x1
+				if int(x1)^int(x2) == 1 {
+					Y[i] = 1
+				}
+			}
+
+			config := DefaultConfig()
+			result := ComputeDirection(Y, X, QuartileMethod, config)
+			t.Logf("seed=%d: dir=%.3f valid=%v", seed, result.Direction, result.Valid)
+
+			if result.Valid && math.Abs(result.Direction) > 0.5 {
+				t.Errorf("XOR should not give strong direction, got %.3f", result.Direction)
+			}
+		})
+	}
+}
+
+// TestDecompose_Validity verifies Validity map is populated correctly.
+func TestDecompose_Validity(t *testing.T) {
+	// Small sample → insufficient for quartile estimation
+	Y := make([]float64, 10)
+	X := [][]float64{make([]float64, 10)}
+	for i := 0; i < 10; i++ {
+		X[0][i] = float64(i)
+		Y[i] = float64(i) * 2
+	}
+
+	config := DefaultConfig()
+	config.MinSamplesPerQuartile = 5
+
+	result, err := Decompose(Y, X, config)
+	if err != nil {
+		t.Fatalf("Decompose error: %v", err)
+	}
+
+	v, ok := result.Validity["0"]
+	if !ok {
+		t.Fatal("Validity['0'] not found")
+	}
+
+	t.Logf("Validity['0']: valid=%v, reason=%q, direction=%.2f", v.Valid, v.Reason, v.Direction)
+
+	if v.Valid {
+		t.Error("Expected Valid=false for n=10 with MinSamplesPerQuartile=5")
+	}
+	if result.Directions["0"] != 0 {
+		t.Errorf("Expected Directions['0']=0 when invalid, got %.2f", result.Directions["0"])
 	}
 }
 

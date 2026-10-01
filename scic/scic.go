@@ -302,9 +302,15 @@ func computeQuartileDirection(Y, X []float64, config Config) DirectionResult { /
 	}
 
 	if sigmaCombined < 1e-10 {
+		// Zero dispersion but means may differ (e.g., threshold Y=1{X>5})
+		if muHigh > muLow {
+			return DirectionResult{Direction: 1.0, Valid: true}
+		} else if muHigh < muLow {
+			return DirectionResult{Direction: -1.0, Valid: true}
+		}
 		return DirectionResult{
 			Valid:  false,
-			Reason: "zero dispersion in both quartiles (constant or near-constant data)",
+			Reason: "zero dispersion and equal means in both quartiles",
 		}
 	}
 
@@ -365,9 +371,14 @@ func computeMedianSplitDirection(Y, X []float64, config Config) DirectionResult 
 	}
 
 	if sigmaCombined < 1e-10 {
+		if muHigh > muLow {
+			return DirectionResult{Direction: 1.0, Valid: true}
+		} else if muHigh < muLow {
+			return DirectionResult{Direction: -1.0, Valid: true}
+		}
 		return DirectionResult{
 			Valid:  false,
-			Reason: "zero dispersion in both split groups (constant or near-constant data)",
+			Reason: "zero dispersion and equal means in both split groups",
 		}
 	}
 
