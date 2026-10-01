@@ -39,6 +39,9 @@ func NewLASSO(cfg LASSOConfig) *LASSO {
 	return &LASSO{config: cfg}
 }
 
+// ConcurrentSafe returns true — LASSO is stateless and safe for concurrent use.
+func (l *LASSO) ConcurrentSafe() bool { return true }
+
 // Fit trains the LASSO model using coordinate descent algorithm.
 func (l *LASSO) Fit(x *mat.Dense, y []float64) ([]float64, error) {
 	if x == nil {

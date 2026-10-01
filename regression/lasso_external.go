@@ -10,6 +10,9 @@ import (
 // ExternalLASSO adapts github.com/causalgo/lasso to the Regressor interface.
 // It provides access to the full-featured parallel LASSO implementation
 // with standardization, early stopping, and training history.
+//
+// ExternalLASSO does NOT implement ConcurrentRegressor — varselect will
+// call Fit sequentially when this regressor is used.
 type ExternalLASSO struct {
 	config *extlasso.Config
 
@@ -28,10 +31,7 @@ func NewExternalLASSO(cfg *extlasso.Config) *ExternalLASSO {
 }
 
 // Fit implements the Regressor interface using the external LASSO library.
-// After fitting, the full model is available via LastModel field.
-//
-// Note: this method writes to e.LastModel and is NOT safe for concurrent use.
-// Use separate ExternalLASSO instances per goroutine.
+// Not safe for concurrent use — varselect detects this and runs sequentially.
 func (e *ExternalLASSO) Fit(x *mat.Dense, y []float64) ([]float64, error) {
 	if x == nil {
 		return nil, fmt.Errorf("nil input matrix")

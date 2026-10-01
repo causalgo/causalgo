@@ -134,4 +134,4 @@ Based on:
 ## See Also
 
 - `internal/validation/` - Reference tests validating Go implementation against Python
-- `docs/dev/analysis/ALGORITHM_COMPARISON.md` - Detailed algorithm comparison
+- `internal/comparison/` - Algorithm comparison benchmarks

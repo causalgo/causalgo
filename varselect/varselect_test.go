@@ -1,6 +1,7 @@
 package varselect
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"sync/atomic"
@@ -260,6 +261,31 @@ func (m *MockRegressor) Fit(x *mat.Dense, y []float64) ([]float64, error) {
 		_, p = x.Dims()
 	}
 	return make([]float64, p), nil
+}
+
+// TestFit_AllRegressorsFail verifies error when all regressor fits fail.
+func TestFit_AllRegressorsFail(t *testing.T) {
+	data := mat.NewDense(10, 2, nil)
+	for i := 0; i < 10; i++ {
+		data.Set(i, 0, float64(i))
+		data.Set(i, 1, float64(i)*2)
+	}
+
+	selector := New(Config{Workers: 1})
+	selector.SetRegressor(&FailingRegressor{})
+
+	_, err := selector.Fit(data)
+	if err == nil {
+		t.Fatal("expected error when all regressor fits fail")
+	}
+	t.Logf("Got expected error: %v", err)
+}
+
+// FailingRegressor always returns an error.
+type FailingRegressor struct{}
+
+func (f *FailingRegressor) Fit(_ *mat.Dense, _ []float64) ([]float64, error) {
+	return nil, fmt.Errorf("intentional failure")
 }
 
 // TestFit_NaNInput verifies that NaN/Inf values are rejected

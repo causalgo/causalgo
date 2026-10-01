@@ -136,6 +136,9 @@ func (s *Selector) Fit(x *mat.Dense) (*Result, error) {
 
 		results := s.processVariables(stdX, remaining, n, p)
 		bestVar, bestMSE, bestWeights := findBestVariable(results)
+		if bestVar < 0 {
+			return nil, fmt.Errorf("no valid variable found: all regressor fits failed")
+		}
 		s.updateResults(result, bestVar, bestMSE, bestWeights, remaining, p)
 	}
 
@@ -238,8 +241,27 @@ func processLastVariable(stdX *mat.Dense, result *Result, remaining []bool, n in
 	}
 }
 
+// isConcurrentSafe checks if the regressor implements ConcurrentRegressor.
+func (s *Selector) isConcurrentSafe() bool {
+	if cr, ok := s.regressor.(regression.ConcurrentRegressor); ok {
+		return cr.ConcurrentSafe()
+	}
+	return false
+}
+
 func (s *Selector) processVariables(stdX *mat.Dense, remaining []bool, n, p int) chan varResult {
 	results := make(chan varResult, p)
+
+	if s.isConcurrentSafe() {
+		s.processVariablesConcurrent(stdX, remaining, n, p, results)
+	} else {
+		s.processVariablesSequential(stdX, remaining, p, results)
+	}
+
+	return results
+}
+
+func (s *Selector) processVariablesConcurrent(stdX *mat.Dense, remaining []bool, n, p int, results chan varResult) {
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, s.config.Workers)
 
@@ -254,27 +276,7 @@ func (s *Selector) processVariables(stdX *mat.Dense, remaining []bool, n, p int)
 		go func(j int) {
 			defer wg.Done()
 			defer func() { <-sem }()
-
-			xSub, y := s.prepareData(stdX, j, remaining)
-
-			if xSub == nil {
-				results <- varResult{idx: j, mse: math.MaxFloat64}
-				return
-			}
-
-			weights, err := s.regressor.Fit(xSub, y)
-			if err != nil || weights == nil {
-				results <- varResult{idx: j, mse: math.MaxFloat64}
-				return
-			}
-			residuals := s.calculateResiduals(xSub, y, weights)
-			mse := computeMSE(residuals)
-
-			results <- varResult{
-				idx:     j,
-				mse:     mse,
-				weights: weights,
-			}
+			results <- s.fitVariable(stdX, j, remaining)
 		}(j)
 	}
 
@@ -282,8 +284,39 @@ func (s *Selector) processVariables(stdX *mat.Dense, remaining []bool, n, p int)
 		wg.Wait()
 		close(results)
 	}()
+}
 
-	return results
+func (s *Selector) processVariablesSequential(stdX *mat.Dense, remaining []bool, p int, results chan varResult) {
+	go func() {
+		for j := 0; j < p; j++ {
+			if !remaining[j] {
+				continue
+			}
+			results <- s.fitVariable(stdX, j, remaining)
+		}
+		close(results)
+	}()
+}
+
+func (s *Selector) fitVariable(stdX *mat.Dense, j int, remaining []bool) varResult {
+	xSub, y := s.prepareData(stdX, j, remaining)
+
+	if xSub == nil {
+		return varResult{idx: j, mse: math.MaxFloat64}
+	}
+
+	weights, err := s.regressor.Fit(xSub, y)
+	if err != nil || weights == nil {
+		return varResult{idx: j, mse: math.MaxFloat64}
+	}
+	residuals := s.calculateResiduals(xSub, y, weights)
+	mse := computeMSE(residuals)
+
+	return varResult{
+		idx:     j,
+		mse:     mse,
+		weights: weights,
+	}
 }
 
 func findBestVariable(results chan varResult) (int, float64, []float64) {

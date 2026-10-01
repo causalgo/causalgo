@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.2] - 2026-10-01
+
+### Fixed
+- **Data race in varselect**: introduced `ConcurrentRegressor` interface — `varselect.Selector` runs sequentially for regressors that don't declare concurrent safety (e.g., `ExternalLASSO`). Built-in `LASSO` implements `ConcurrentSafe()` and runs in parallel as before
+- **varselect panic on all-fail**: `Fit` returns error instead of panicking when all regressor fits fail (`bestVar=-1`)
+- **Threshold regression**: `Y=1{X>5}` correctly returns `+1.0` again — mean comparison restored when both MAD and std are zero but means differ
+
+### Changed
+- README: removed last "100% match" claim from features list
+- `cmd/visualize/README.md`: removed reference to private `docs/dev/`
+
+---
+
 ## [0.6.1] - 2026-10-01
 
 ### Fixed
@@ -304,7 +317,8 @@ See [ROADMAP.md](ROADMAP.md) for future plans toward v1.0.0.
 
 ---
 
-[Unreleased]: https://github.com/causalgo/causalgo/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/causalgo/causalgo/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/causalgo/causalgo/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/causalgo/causalgo/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/causalgo/causalgo/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/causalgo/causalgo/compare/v0.4.0...v0.5.0
