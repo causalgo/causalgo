@@ -14,7 +14,7 @@ Provides plotting and visualization utilities for SURD (Synergistic-Unique-Redun
 
 ```go
 import (
-    "github.com/causalgo/causalgo/pkg/visualization"
+    "github.com/causalgo/causalgo/visualization"
     "github.com/causalgo/causalgo/surd"
 )
 
@@ -205,12 +205,12 @@ This generates:
 Run the test suite:
 
 ```bash
-go test -v ./pkg/visualization/
+go test -v ./visualization/
 ```
 
 **Coverage:**
 ```bash
-go test -cover ./pkg/visualization/
+go test -cover ./visualization/
 ```
 
 ## Dependencies

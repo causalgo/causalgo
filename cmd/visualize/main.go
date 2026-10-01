@@ -34,7 +34,7 @@ func main() {
 	dt := flag.Int("dt", defaultDT, "Time delay")
 	seed := flag.Int64("seed", defaultSeed, "Random seed")
 	output := flag.String("output", "", "Output file (PNG/SVG/PDF). If empty, shows ASCII chart only")
-	format := flag.String("format", "png", "Output format: png, svg, pdf (auto-detected from --output if not specified)")
+	format := flag.String("format", "", "Output format: png, svg, pdf (auto-detected from --output extension if empty)")
 
 	flag.Parse()
 

@@ -26,12 +26,19 @@ type Config struct {
 	Verbose   bool    // Enable verbose logging
 }
 
-// Result represents causal ordering results
+// Result represents causal ordering results.
 type Result struct {
-	Adjacency [][]bool    // Adjacency matrix (true = causal link)
-	Order     []int       // Variable ordering (causal sequence)
-	Residuals []float64   // Residual variances at each step
-	Weights   [][]float64 // Causal weights matrix
+	// Adjacency matrix: Adjacency[i][j] = true means variable j causally influences variable i.
+	Adjacency [][]bool
+
+	// Order lists variables sink-first: the most predictable variable (lowest MSE) appears first.
+	Order []int
+
+	// Residuals holds the residual MSE at each selection step.
+	Residuals []float64
+
+	// Weights matrix: Weights[i][j] is the regression weight of variable j when predicting variable i.
+	Weights [][]float64
 }
 
 // Selector implements recursive variable selection for causal ordering
@@ -72,9 +79,11 @@ func (s *Selector) SetRegressor(r regression.Regressor) {
 	s.regressor = r
 }
 
-// Fit performs causal ordering on input data
-// X: n x p matrix (n samples, p variables)
-// Returns: causal ordering and adjacency structure
+// Fit performs causal ordering on input data.
+//
+// X is an n x p matrix (n samples, p variables).
+// Order is built sink-first: the most predictable variable appears first.
+// Adjacency[i][j] = true means variable j causally influences variable i.
 func (s *Selector) Fit(x *mat.Dense) (*Result, error) {
 	if x == nil {
 		return nil, fmt.Errorf("nil input matrix")
@@ -87,6 +96,16 @@ func (s *Selector) Fit(x *mat.Dense) (*Result, error) {
 	}
 	if n < 2 {
 		return nil, fmt.Errorf("need at least 2 rows, got %d", n)
+	}
+
+	// Validate input for NaN/Inf values
+	for i := 0; i < n; i++ {
+		for j := 0; j < p; j++ {
+			v := x.At(i, j)
+			if math.IsNaN(v) || math.IsInf(v, 0) {
+				return nil, fmt.Errorf("invalid value at row %d, col %d: %v", i, j, v)
+			}
+		}
 	}
 
 	stdX := s.standardize(x)
@@ -243,7 +262,11 @@ func (s *Selector) processVariables(stdX *mat.Dense, remaining []bool, n, p int)
 				return
 			}
 
-			weights := s.regressor.Fit(xSub, y)
+			weights, err := s.regressor.Fit(xSub, y)
+			if err != nil || weights == nil {
+				results <- varResult{idx: j, mse: math.MaxFloat64}
+				return
+			}
 			residuals := s.calculateResiduals(xSub, y, weights)
 			mse := computeMSE(residuals)
 

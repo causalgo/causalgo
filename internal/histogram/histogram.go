@@ -100,6 +100,17 @@ func NewNDHistogram(data [][]float64, bins []int) (*NDHistogram, error) {
 		}
 	}
 
+	// Check total histogram size to prevent OOM
+	const maxTotalBins = 100_000_000 // 100M bins * 8 bytes = 800MB max
+	totalBins := 1
+	for _, b := range bins {
+		// Check for overflow before multiplying
+		if totalBins > maxTotalBins/b {
+			return nil, fmt.Errorf("total histogram size exceeds limit: product of bins would exceed %d", maxTotalBins)
+		}
+		totalBins *= b
+	}
+
 	// Compute min/max for each variable
 	minVals := make([]float64, nVars)
 	maxVals := make([]float64, nVars)
@@ -133,12 +144,6 @@ func NewNDHistogram(data [][]float64, bins []int) (*NDHistogram, error) {
 			// Add small epsilon to avoid division by zero
 			maxVals[j] += 1e-10
 		}
-	}
-
-	// Calculate total size of histogram
-	totalBins := 1
-	for _, b := range bins {
-		totalBins *= b
 	}
 
 	// Initialize histogram with zeros

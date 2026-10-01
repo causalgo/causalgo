@@ -39,8 +39,7 @@ transfers to the project maintainer (Andrey Kolkov, or GRPMSoft Ltd. after incor
 
 ## Acknowledgments
 
-- **SURD Algorithm**: Based on the paper "Quantifying high-order synergistic and redundant
-  information decomposition in neural spiking data" (Nature Communications, 2024)
+- **SURD Algorithm**: Based on the paper "Decomposing causality into its synergistic, unique, and redundant components" (Nature Communications, 2024, doi:10.1038/s41467-024-53373-4)
 - **scigolib/hdf5**: HDF5 library for Go (Andrey Kolkov)
 - **born-ml/born**: ML framework (Andrey Kolkov portfolio)
 - **Gonum**: Numerical computing library for Go

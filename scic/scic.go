@@ -10,7 +10,7 @@
 //   - Conflict: Detects when multiple sources have opposing effects
 //   - Confidence: Statistical reliability of directional estimates
 //
-// Reference: See docs/dev/SCIC_THEORY.md for mathematical foundations.
+// Reference: See docs/SCIC.md for usage guide and https://doi.org/10.1038/s41467-024-53373-4 for SURD foundations.
 package scic
 
 import (
@@ -588,7 +588,7 @@ type RegimeDirection struct {
 // 3-4 for general non-monotonicity exploration.
 func DirectionProfile(Y, X []float64, numRegimes int, config Config) []RegimeDirection { //nolint:gocritic // Y/X are standard mathematical notation
 	n := len(Y)
-	if n == 0 || numRegimes < 2 {
+	if n == 0 || numRegimes < 2 || numRegimes > n {
 		return nil
 	}
 
@@ -602,10 +602,6 @@ func DirectionProfile(Y, X []float64, numRegimes int, config Config) []RegimeDir
 	})
 
 	regimeSize := n / numRegimes
-	if regimeSize < config.MinSamplesPerQuartile*2 {
-		// Not enough data per regime for meaningful direction estimation
-		regimeSize = n / numRegimes // proceed anyway, mark invalid if too small
-	}
 
 	results := make([]RegimeDirection, numRegimes)
 

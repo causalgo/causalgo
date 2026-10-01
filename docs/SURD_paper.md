@@ -328,4 +328,4 @@ Open Access - Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 Inter
 
 ---
 
-*Converted to Markdown for CausalGo project reference*
+*Summary prepared for implementation reference. Original paper: https://doi.org/10.1038/s41467-024-53373-4. All rights belong to the original authors.*

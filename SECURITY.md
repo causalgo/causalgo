@@ -6,8 +6,8 @@ We actively maintain the following versions of CausalGo with security updates:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 0.5.x-alpha | :white_check_mark: | Active development |
-| < 0.5.0     | :x:                | No support |
+| 0.6.x | :white_check_mark: | Active development |
+| < 0.6.0     | :x:                | No support |
 
 **Note**: Once CausalGo reaches v1.0, we will implement semantic versioning with Long-Term Support (LTS) for major versions.
 
@@ -76,7 +76,7 @@ func DecomposeFromData(data [][]float64, bins []int) (*Result, error) {
 ### 2. MATLAB File Parsing
 
 **Malformed .mat Files**:
-- **Format Validation**: `pkg/matdata` uses `github.com/scigolib/matlab` for safe MAT-file parsing
+- **Format Validation**: `matdata` uses `github.com/scigolib/matlab` for safe MAT-file parsing
 - **Supported Versions**: v5 (with compression) and v7.3 (HDF5)
 - **Memory Bounds**: Validates array dimensions before allocation
 - **Type Checking**: Verifies data types match expected formats (float64, matrices)
@@ -88,7 +88,7 @@ func DecomposeFromData(data [][]float64, bins []int) (*Result, error) {
 
 **Mitigation**:
 ```go
-// pkg/matdata/matdata.go
+// matdata/matdata.go
 func (f *File) GetMatrix(varName string) (*mat.Dense, error) {
     // Library handles format validation
     // We add dimension sanity checks

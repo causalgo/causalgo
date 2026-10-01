@@ -14,13 +14,14 @@
 # Internal packages - Core functionality
 /internal/entropy/ @kolkov
 /internal/histogram/ @kolkov
-/internal/varselect/ @kolkov
 /internal/validation/ @kolkov
 /internal/comparison/ @kolkov
 
 # Public packages - User-facing APIs
-/pkg/matdata/ @kolkov
-/pkg/visualization/ @kolkov
+/varselect/ @kolkov
+/matdata/ @kolkov
+/visualization/ @kolkov
+/scic/ @kolkov
 
 # Regression models - LASSO implementation
 /regression/ @kolkov
@@ -37,15 +38,11 @@
 *.md @kolkov
 /docs/ @kolkov
 
-# Claude Code configuration
-/.claude/ @kolkov
-
 # GitHub configuration and CI/CD
 /.github/ @kolkov
 
 # Code quality and linting configuration
 /.golangci.yml @kolkov
-/Makefile @kolkov
 
 # Tests - Ensure coverage and reliability
 *_test.go @kolkov
