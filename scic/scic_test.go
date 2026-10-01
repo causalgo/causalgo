@@ -549,27 +549,26 @@ func TestMedianSplit_InsufficientSamples(t *testing.T) {
 	}
 }
 
-// TestMedianSplit_ZeroVariance tests median split with zero variance.
+// TestMedianSplit_ZeroVariance tests median split with zero variance (step function).
 func TestMedianSplit_ZeroVariance(t *testing.T) {
-	// Create data where low and high groups have zero variance
+	// Step function: Y=5 for X<10, Y=10 for X>=10 → both groups have zero stddev
 	Y := []float64{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10}
 	X := []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 
 	config := Config{
 		MinSamplesPerQuartile: 3,
 		DirectionMethod:       MedianSplitMethod,
-		RobustStats:           false, // Use mean/stddev
+		RobustStats:           false,
 	}
 
 	result := ComputeDirection(Y, X, MedianSplitMethod, config)
 
-	t.Logf("MedianSplit zero variance: direction=%.4f, valid=%v", result.Direction, result.Valid)
-	if !result.Valid {
-		t.Errorf("Expected valid result: %s", result.Reason)
-	}
-	// Should show positive direction since Y increases with X
-	if result.Direction <= 0 {
-		t.Errorf("Expected positive direction, got %.4f", result.Direction)
+	t.Logf("MedianSplit zero variance: direction=%.4f, valid=%v, reason=%q",
+		result.Direction, result.Valid, result.Reason)
+
+	// Both groups have constant Y → zero dispersion → Valid=false
+	if result.Valid {
+		t.Error("Expected Valid=false for constant-within-group data")
 	}
 }
 

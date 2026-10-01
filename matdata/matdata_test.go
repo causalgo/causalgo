@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const testMATFile = "../../testdata/matlab/energy_cascade_signals.mat"
+const testMATFile = "../testdata/matlab/energy_cascade_signals.mat"
 
 // Tests for MATLAB file reading using scigolib/matlab.
 // Uses test file from testdata/matlab/energy_cascade_signals.mat

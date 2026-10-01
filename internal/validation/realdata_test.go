@@ -22,7 +22,7 @@ func TestSURD_EnergyCascade(t *testing.T) {
 	// LoadMatrixTransposed returns [21760 x 4] = [samples x variables]
 	data, err := matdata.LoadMatrixTransposed(energyCascadeMATFile, "X")
 	if err != nil {
-		t.Skipf("Skipping test: cannot load MATLAB file (%v)", err)
+		t.Fatalf("Cannot load MATLAB file (fixture must be committed): %v", err)
 	}
 
 	t.Logf("Loaded energy cascade data: %d samples x %d variables", len(data), len(data[0]))
@@ -101,7 +101,7 @@ func TestSURD_EnergyCascade(t *testing.T) {
 		},
 	}
 
-	tolerance := 0.1 // 10% tolerance for numerical differences
+	tolerance := 1e-3 // 0.1% relative tolerance — values match Python to 4th decimal
 
 	for i, tc := range testCases {
 		t.Run(tc.signalName, func(t *testing.T) {

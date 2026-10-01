@@ -1,6 +1,7 @@
 package surd
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -258,7 +259,7 @@ func TestGenerateCombinations(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run("nvars="+string(rune(tt.nvars+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("nvars=%d", tt.nvars), func(t *testing.T) {
 			combs := generateCombinations(tt.nvars)
 			if len(combs) != tt.expected {
 				t.Errorf("generateCombinations(%d) returned %d combinations, want %d",

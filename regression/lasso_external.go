@@ -1,6 +1,8 @@
 package regression
 
 import (
+	"fmt"
+
 	extlasso "github.com/causalgo/lasso"
 	"gonum.org/v1/gonum/mat"
 )
@@ -27,22 +29,25 @@ func NewExternalLASSO(cfg *extlasso.Config) *ExternalLASSO {
 
 // Fit implements the Regressor interface using the external LASSO library.
 // After fitting, the full model is available via LastModel field.
-func (e *ExternalLASSO) Fit(x *mat.Dense, y []float64) []float64 {
+//
+// Note: this method writes to e.LastModel and is NOT safe for concurrent use.
+// Use separate ExternalLASSO instances per goroutine.
+func (e *ExternalLASSO) Fit(x *mat.Dense, y []float64) ([]float64, error) {
 	if x == nil {
-		return nil
+		return nil, fmt.Errorf("nil input matrix")
 	}
 
 	_, p := x.Dims()
 	if p == 0 {
-		return []float64{}
+		return []float64{}, nil
 	}
 
 	model, err := extlasso.Fit(x, y, e.config)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("external LASSO fit failed: %w", err)
 	}
 	e.LastModel = model
-	return e.LastModel.Weights
+	return e.LastModel.Weights, nil
 }
 
 // Intercept returns the intercept from the last trained model.

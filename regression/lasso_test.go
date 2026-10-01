@@ -59,7 +59,10 @@ func TestLASSOFit(t *testing.T) {
 				MaxIter:   10000,
 			})
 
-			weights := model.Fit(tt.X, tt.y)
+			weights, err := model.Fit(tt.X, tt.y)
+			if err != nil {
+				t.Fatalf("Fit returned error: %v", err)
+			}
 
 			if len(weights) != len(tt.wantWeights) {
 				t.Fatalf("weights length = %d, want %d", len(weights), len(tt.wantWeights))

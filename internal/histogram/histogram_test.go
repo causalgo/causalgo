@@ -90,6 +90,14 @@ func TestNewNDHistogram_Basic(t *testing.T) {
 			bins:        []int{10001, 2},
 			expectError: true,
 		},
+		{
+			name: "total bins exceeds limit",
+			data: [][]float64{
+				{0.0, 0.0, 0.0},
+			},
+			bins:        []int{10000, 10000, 10000},
+			expectError: true,
+		},
 	}
 
 	for _, tt := range tests {

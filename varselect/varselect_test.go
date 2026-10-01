@@ -253,11 +253,33 @@ type MockRegressor struct {
 	called atomic.Bool
 }
 
-func (m *MockRegressor) Fit(x *mat.Dense, y []float64) []float64 {
+func (m *MockRegressor) Fit(x *mat.Dense, y []float64) ([]float64, error) {
 	m.called.Store(true)
 	p := 1
 	if x != nil {
 		_, p = x.Dims()
 	}
-	return make([]float64, p)
+	return make([]float64, p), nil
+}
+
+// TestFit_NaNInput verifies that NaN/Inf values are rejected
+func TestFit_NaNInput(t *testing.T) {
+	tests := []struct {
+		name string
+		data *mat.Dense
+	}{
+		{"NaN value", mat.NewDense(3, 2, []float64{1, 2, math.NaN(), 4, 5, 6})},
+		{"Inf value", mat.NewDense(3, 2, []float64{1, 2, 3, math.Inf(1), 5, 6})},
+		{"-Inf value", mat.NewDense(3, 2, []float64{1, 2, 3, 4, math.Inf(-1), 6})},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			selector := New(Config{})
+			_, err := selector.Fit(tt.data)
+			if err == nil {
+				t.Error("expected error for invalid input, got nil")
+			}
+		})
+	}
 }

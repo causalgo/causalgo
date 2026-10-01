@@ -1,6 +1,7 @@
 package regression
 
 import (
+	"fmt"
 	"math"
 
 	"gonum.org/v1/gonum/floats"
@@ -38,16 +39,15 @@ func NewLASSO(cfg LASSOConfig) *LASSO {
 	return &LASSO{config: cfg}
 }
 
-// Fit trains the LASSO model using coordinate descent algorithm
-// Implements Regressor interface
-func (l *LASSO) Fit(x *mat.Dense, y []float64) []float64 {
+// Fit trains the LASSO model using coordinate descent algorithm.
+func (l *LASSO) Fit(x *mat.Dense, y []float64) ([]float64, error) {
 	if x == nil {
-		return nil
+		return nil, fmt.Errorf("nil input matrix")
 	}
 
 	n, p := x.Dims()
 	if p == 0 {
-		return []float64{}
+		return []float64{}, nil
 	}
 	weights := make([]float64, p)
 
@@ -97,7 +97,7 @@ func (l *LASSO) Fit(x *mat.Dense, y []float64) []float64 {
 			break
 		}
 	}
-	return weights
+	return weights, nil
 }
 
 // softThreshold applies the soft-thresholding operator

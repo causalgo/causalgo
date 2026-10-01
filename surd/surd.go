@@ -29,15 +29,15 @@ import (
 // Result contains the decomposition of causality
 type Result struct {
 	// Redundant maps variable combinations to their redundant causality
-	// Key format: "1,2,3" for variables 1,2,3
+	// Key format: "0,1,2" for variables 0,1,2
 	Redundant map[string]float64
 
 	// Unique maps individual variables to their unique causality
-	// Key format: "1", "2", "3" for individual variables
+	// Key format: "0", "1", "2" for individual variables
 	Unique map[string]float64
 
 	// Synergistic maps variable combinations to their synergistic causality
-	// Key format: "1,2" for variables 1,2; "1,2,3" for variables 1,2,3
+	// Key format: "0,1" for variables 0,1; "0,1,2" for variables 0,1,2
 	Synergistic map[string]float64
 
 	// MutualInfo maps variable combinations to their mutual information
@@ -47,19 +47,19 @@ type Result struct {
 	InfoLeak float64
 }
 
-// Decompose выполняет SURD декомпозицию на готовой гистограмме.
+// Decompose performs SURD decomposition on a precomputed histogram.
 //
-// histogram: N-мерная гистограмма вероятностей [target, agent1, agent2, ...]
-// Первая размерность (ось 0) = целевая переменная (будущее состояние)
-// Остальные размерности = агенты (переменные в настоящем)
+// hist is an N-dimensional probability histogram [target, agent1, agent2, ...].
+// The first dimension (axis 0) is the target variable (future state).
+// The remaining dimensions are agents (present-state variables).
 //
-// Возвращает Result с R, U, S компонентами и утечкой информации.
+// It returns a Result containing the R, U, S components and information leak.
 //
-// Алгоритм:
-//  1. Вычисляет утечку информации: H(target|agents) / H(target)
-//  2. Для всех комбинаций агентов вычисляет specific MI
-//  3. Для каждого состояния target распределяет specific MI в R или S
-//  4. Извлекает Unique из Redundant (комбинации длины 1)
+// Algorithm:
+//  1. Compute information leak: H(target|agents) / H(target)
+//  2. Compute specific MI for all agent combinations
+//  3. For each target state, distribute specific MI into R or S
+//  4. Extract Unique from Redundant (combinations of length 1)
 func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 	if hist == nil {
 		return nil, fmt.Errorf("histogram is nil")
@@ -72,16 +72,16 @@ func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 
 	probs := hist.Probabilities()
 
-	// Создаем NDArray для функций entropy
+	// Create NDArray for entropy functions
 	arr := &entropy.NDArray{
 		Data:  probs,
 		Shape: shape,
 	}
 
-	nvars := len(shape) - 1 // количество агентов
-	ntarget := shape[0]     // количество состояний target
+	nvars := len(shape) - 1 // number of agents
+	ntarget := shape[0]     // number of target states
 
-	// Шаг 1: Вычислить утечку информации
+	// Step 1: Compute information leak
 	// info_leak = H(target|agents) / H(target)
 	hTarget := entropy.JointEntropy(arr, []int{0})
 	agents := make([]int, nvars)
@@ -91,36 +91,36 @@ func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 	hCondTarget := entropy.ConditionalEntropy(arr, []int{0}, agents)
 	infoLeak := hCondTarget / hTarget
 
-	// Шаг 2: Вычислить specific MI для всех комбинаций агентов
-	// combs[i] = список индексов агентов в комбинации
+	// Step 2: Compute specific MI for all agent combinations
+	// combs[i] = list of agent indices in the combination
 	combs := generateCombinations(nvars)
 
 	// specificMI[comb][targetState] = specific mutual information
 	specificMI := make(map[string][]float64)
 
-	// Маргинальное распределение target: p_s
+	// Marginal distribution of target: p_s
 	pTarget := marginalizeTo(arr, []int{0})
 
 	for _, comb := range combs {
 		combKey := combToKey(comb)
 
-		// Вычисляем specific MI для этой комбинации
+		// Compute specific MI for this combination
 		specificMI[combKey] = computeSpecificMI(arr, comb, pTarget, ntarget)
 	}
 
-	// Шаг 3: Вычислить обычный MI для всех комбинаций
+	// Step 3: Compute standard MI for all combinations
 	mutualInfo := make(map[string]float64)
 	for _, comb := range combs {
 		combKey := combToKey(comb)
 		agentIndices := make([]int, len(comb))
 		for i, c := range comb {
-			agentIndices[i] = c + 1 // +1 потому что target = axis 0
+			agentIndices[i] = c + 1 // +1 because target = axis 0
 		}
 		mi := entropy.MutualInformation(arr, []int{0}, agentIndices)
 		mutualInfo[combKey] = mi
 	}
 
-	// Шаг 4: Инициализируем R и S
+	// Step 4: Initialize R and S
 	redundant := make(map[string]float64)
 	synergistic := make(map[string]float64)
 
@@ -132,16 +132,16 @@ func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 		}
 	}
 
-	// Шаг 5: Обработка каждого состояния target
+	// Step 5: Process each target state
 	for t := 0; t < ntarget; t++ {
-		// Извлечь specific MI для этого состояния target
+		// Extract specific MI for this target state
 		i1 := make([]float64, len(combs))
 		for idx, comb := range combs {
 			combKey := combToKey(comb)
 			i1[idx] = specificMI[combKey][t]
 		}
 
-		// Сортировка по specific MI
+		// Sort by specific MI
 		indices := argsort(i1)
 		sortedCombs := make([][]int, len(combs))
 		sortedI1 := make([]float64, len(combs))
@@ -150,10 +150,10 @@ func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 			sortedI1[i] = i1[idx]
 		}
 
-		// Обновление: если higher-order комбинация имеет меньше MI, чем max(lower-order), обнулить
+		// Update: if a higher-order combination has less MI than max(lower-order), zero it out
 		sortedI1 = filterSpecificMI(sortedCombs, sortedI1)
 
-		// Пересортировка после фильтрации
+		// Re-sort after filtering
 		indices = argsort(sortedI1)
 		finalCombs := make([][]int, len(sortedCombs))
 		finalI1 := make([]float64, len(sortedI1))
@@ -162,14 +162,14 @@ func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 			finalI1[i] = sortedI1[idx]
 		}
 
-		// Вычисляем инкременты
+		// Compute increments
 		diffs := make([]float64, len(finalI1))
 		diffs[0] = finalI1[0]
 		for i := 1; i < len(finalI1); i++ {
 			diffs[i] = finalI1[i] - finalI1[i-1]
 		}
 
-		// Распределение инкрементов в R или S
+		// Distribute increments into R or S
 		redVars := make([]int, nvars)
 		for i := 0; i < nvars; i++ {
 			redVars[i] = i
@@ -182,7 +182,7 @@ func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 				// Redundant
 				key := combToKey(redVars)
 				redundant[key] += info
-				// Удалить этот агент из redVars
+				// Remove this agent from redVars
 				redVars = removeElement(redVars, comb[0])
 			} else {
 				// Synergistic
@@ -192,7 +192,7 @@ func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 		}
 	}
 
-	// Шаг 6: Извлечь Unique из Redundant
+	// Step 6: Extract Unique from Redundant
 	unique := make(map[string]float64)
 	for key, val := range redundant {
 		indices := keyToComb(key)
@@ -211,19 +211,19 @@ func Decompose(hist *histogram.NDHistogram) (*Result, error) {
 	}, nil
 }
 
-// DecomposeFromData создает гистограмму из данных и выполняет декомпозицию.
+// DecomposeFromData builds a histogram from raw data and performs the decomposition.
 //
-// data: матрица [samples x variables], первый столбец = target
-// bins: количество бинов для каждой переменной
+// data is a [samples x variables] matrix where the first column is the target.
+// bins specifies the number of bins for each variable.
 //
-// Пример:
+// Example:
 //
 //	data := [][]float64{
 //	    {1.0, 0.5, 0.3},  // sample 0: target=1.0, agent1=0.5, agent2=0.3
 //	    {2.0, 1.5, 0.7},  // sample 1: target=2.0, agent1=1.5, agent2=0.7
 //	    ...
 //	}
-//	bins := []int{10, 10, 10}  // 10 bins для каждой переменной
+//	bins := []int{10, 10, 10}  // 10 bins per variable
 //	result, err := DecomposeFromData(data, bins)
 func DecomposeFromData(data [][]float64, bins []int) (*Result, error) {
 	if len(data) == 0 {
@@ -246,9 +246,9 @@ func DecomposeFromData(data [][]float64, bins []int) (*Result, error) {
 
 // --- Helper functions ---
 
-// generateCombinations генерирует все комбинации индексов агентов от 1 до nvars.
-// Возвращает список комбинаций, где каждая комбинация = slice индексов (0-based).
-// Например, для nvars=3: [[0], [1], [2], [0,1], [0,2], [1,2], [0,1,2]]
+// generateCombinations generates all combinations of agent indices from 0 to nvars-1.
+// Returns a list of combinations, where each combination is a slice of 0-based indices.
+// For example, for nvars=3: [[0], [1], [2], [0,1], [0,2], [1,2], [0,1,2]]
 func generateCombinations(nvars int) [][]int {
 	result := [][]int{}
 
@@ -260,7 +260,7 @@ func generateCombinations(nvars int) [][]int {
 	return result
 }
 
-// combinations генерирует все комбинации длины k из n элементов (0..n-1).
+// combinations generates all combinations of length k from n elements (0..n-1).
 func combinations(n, k int) [][]int {
 	if k > n || k <= 0 {
 		return [][]int{}
@@ -296,8 +296,8 @@ func combinations(n, k int) [][]int {
 	return result
 }
 
-// combToKey преобразует список индексов в строковый ключ.
-// Например: [0, 2, 3] -> "0,2,3"
+// combToKey converts a list of indices to a string key.
+// For example: [0, 2, 3] -> "0,2,3"
 func combToKey(comb []int) string {
 	if len(comb) == 0 {
 		return ""
@@ -309,8 +309,8 @@ func combToKey(comb []int) string {
 	return strings.Join(strs, ",")
 }
 
-// keyToComb преобразует строковый ключ в список индексов.
-// Например: "0,2,3" -> [0, 2, 3]
+// keyToComb converts a string key to a list of indices.
+// For example: "0,2,3" -> [0, 2, 3]
 func keyToComb(key string) []int {
 	if key == "" {
 		return []int{}
@@ -324,10 +324,10 @@ func keyToComb(key string) []int {
 	return result
 }
 
-// marginalizeTo маргинализует NDArray к указанным осям и возвращает 1D распределение.
-// Для keepAxes=[0] возвращает p(target).
+// marginalizeTo marginalizes an NDArray down to the specified axes and returns a 1D distribution.
+// For keepAxes=[0] it returns p(target).
 func marginalizeTo(arr *entropy.NDArray, keepAxes []int) []float64 {
-	// Простой случай: keepAxes = [0] -> суммируем все оси кроме 0
+	// Simple case: keepAxes = [0] -> sum over all axes except 0
 	if len(keepAxes) == 1 && keepAxes[0] == 0 {
 		shape := arr.Shape
 		targetSize := shape[0]
@@ -347,7 +347,7 @@ func marginalizeTo(arr *entropy.NDArray, keepAxes []int) []float64 {
 		return result
 	}
 
-	// Общий случай - не нужен для текущей реализации
+	// General case - not needed for the current implementation
 	panic("marginalizeTo: general case not implemented")
 }
 
@@ -377,23 +377,23 @@ func multiToFlatIndex(shape, multiIdx []int) int {
 	return flatIdx
 }
 
-// computeSpecificMI вычисляет specific mutual information для комбинации агентов.
+// computeSpecificMI computes specific mutual information for an agent combination.
 //
-// Specific MI для комбинации j и состояния target t:
+// Specific MI for combination j and target state t:
 // I_specific(t, j) = p(j|t) * [log2(p(t|j)) - log2(p(t))]
 //
-// Возвращает массив [ntarget]float64 со specific MI для каждого состояния target.
+// Returns a [ntarget]float64 array with the specific MI for each target state.
 func computeSpecificMI(arr *entropy.NDArray, comb []int, pTarget []float64, ntarget int) []float64 {
 	shape := arr.Shape
 
-	// Создаем список осей для маргинализации
+	// Build the list of axes to keep
 	// keepAxes = [0, comb[0]+1, comb[1]+1, ...]
 	keepAxes := []int{0}
 	for _, c := range comb {
 		keepAxes = append(keepAxes, c+1)
 	}
 
-	// Остальные оси (те, что не в keepAxes)
+	// Remaining axes (those not in keepAxes)
 	allAxes := make(map[int]bool)
 	for i := 0; i < len(shape); i++ {
 		allAxes[i] = true
@@ -409,11 +409,11 @@ func computeSpecificMI(arr *entropy.NDArray, comb []int, pTarget []float64, ntar
 	sort.Ints(sumAxes)
 
 	// p_as: joint distribution p(target, agents_in_comb)
-	// Нужно просуммировать по всем осям, кроме keepAxes
+	// Sum over all axes except keepAxes
 	pAS := marginalizeNDArray(arr, keepAxes)
 
 	// p_a: marginal distribution p(agents_in_comb)
-	// Суммируем p_as по оси 0 (target)
+	// Sum p_as over axis 0 (target)
 	agentAxes := make([]int, len(comb))
 	for i, c := range comb {
 		agentAxes[i] = c + 1
@@ -423,12 +423,12 @@ func computeSpecificMI(arr *entropy.NDArray, comb []int, pTarget []float64, ntar
 	// p_a_s = p_as / p_s (broadcast)
 	// p_s_a = p_as / p_a (broadcast)
 
-	// Specific MI для каждого состояния target:
+	// Specific MI for each target state:
 	// I_s[t] = sum over agents_comb of: p(agents|t) * [log2(p(t|agents)) - log2(p(t))]
 
 	result := make([]float64, ntarget)
 
-	// Итерация по всем элементам p_as
+	// Iterate over all elements of p_as
 	// Shape p_as = [ntarget, shape[comb[0]+1], shape[comb[1]+1], ...]
 	totalSize := 1
 	for _, ax := range keepAxes {
@@ -470,7 +470,7 @@ func computeSpecificMI(arr *entropy.NDArray, comb []int, pTarget []float64, ntar
 	return result
 }
 
-// marginalizeNDArray маргинализует NDArray, оставляя только указанные оси.
+// marginalizeNDArray marginalizes an NDArray, keeping only the specified axes.
 func marginalizeNDArray(arr *entropy.NDArray, keepAxes []int) []float64 {
 	shape := arr.Shape
 
@@ -524,7 +524,7 @@ func marginalizeNDArray(arr *entropy.NDArray, keepAxes []int) []float64 {
 	return result
 }
 
-// flatToMultiIndexCustom конвертирует flat index в multi-index для маргинализованного массива.
+// flatToMultiIndexCustom converts a flat index to a multi-index for a marginalized array.
 func flatToMultiIndexCustom(data []float64, keepAxes []int, originalShape []int, flatIdx int) []int {
 	// Build marginal shape
 	marginalShape := []int{}
@@ -535,7 +535,7 @@ func flatToMultiIndexCustom(data []float64, keepAxes []int, originalShape []int,
 	return flatToMultiIndex(marginalShape, flatIdx)
 }
 
-// multiToFlatIndexCustom конвертирует multi-index в flat index для заданных осей.
+// multiToFlatIndexCustom converts a multi-index to a flat index for the given axes.
 func multiToFlatIndexCustom(axes []int, multiIdx []int, originalShape []int) int {
 	marginalShape := []int{}
 	for _, ax := range axes {
@@ -544,7 +544,7 @@ func multiToFlatIndexCustom(axes []int, multiIdx []int, originalShape []int) int
 	return multiToFlatIndex(marginalShape, multiIdx)
 }
 
-// argsort возвращает индексы, которые бы отсортировали массив.
+// argsort returns the indices that would sort the array.
 func argsort(data []float64) []int {
 	indices := make([]int, len(data))
 	for i := range indices {
@@ -558,13 +558,13 @@ func argsort(data []float64) []int {
 	return indices
 }
 
-// filterSpecificMI фильтрует specific MI согласно правилу SURD:
-// Если higher-order комбинация имеет меньше MI, чем max(lower-order), обнулить её.
+// filterSpecificMI filters specific MI according to the SURD rule:
+// if a higher-order combination has less MI than max(lower-order), zero it out.
 func filterSpecificMI(combs [][]int, specificMI []float64) []float64 {
 	result := make([]float64, len(specificMI))
 	copy(result, specificMI)
 
-	// Найти максимальную длину комбинации
+	// Find the maximum combination length
 	maxLen := 0
 	for _, comb := range combs {
 		if len(comb) > maxLen {
@@ -572,9 +572,9 @@ func filterSpecificMI(combs [][]int, specificMI []float64) []float64 {
 		}
 	}
 
-	// Для каждой длины l от 1 до maxLen-1
+	// For each length l from 1 to maxLen-1
 	for l := 1; l < maxLen; l++ {
-		// Найти максимальное значение для длины l
+		// Find the maximum value for length l
 		maxVal := 0.0
 		for i, comb := range combs {
 			if len(comb) == l && result[i] > maxVal {
@@ -582,7 +582,7 @@ func filterSpecificMI(combs [][]int, specificMI []float64) []float64 {
 			}
 		}
 
-		// Обнулить все комбинации длины l+1 с меньшим значением
+		// Zero out all combinations of length l+1 with a smaller value
 		for i, comb := range combs {
 			if len(comb) == l+1 && result[i] < maxVal {
 				result[i] = 0
@@ -593,7 +593,7 @@ func filterSpecificMI(combs [][]int, specificMI []float64) []float64 {
 	return result
 }
 
-// removeElement удаляет первое вхождение элемента из slice.
+// removeElement removes the first occurrence of an element from a slice.
 func removeElement(slice []int, elem int) []int {
 	for i, v := range slice {
 		if v == elem {

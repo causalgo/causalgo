@@ -9,9 +9,10 @@ SCIC adds **how** variables influence the target: facilitative or inhibitory.
 
 | Component | Range | Meaning |
 |-----------|-------|---------|
-| `Direction` | `[-1, +1]` | `+1` facilitative (X up -> Y up), `-1` inhibitory (X up -> Y down) |
+| `Direction` | `[-1, +1]` | `+1` facilitative association (X up → Y up), `-1` inhibitory (X up → Y down) |
 | `Conflict` | `[0, 1]` | `0` aligned (same direction), `1` opposing (opposite directions) |
-| `Confidence` | `[0, 1]` | Bootstrap statistical confidence |
+| `Confidence` | `[0, 1]` | Bootstrap sign stability (proportion of resamples with same sign) |
+| `Validity` | `DirectionResult` | Whether direction estimation succeeded (check `Valid` and `Reason`) |
 
 SURD components (`Redundant`, `Unique`, `Synergistic`, `InfoLeak`) are preserved unchanged.
 
@@ -84,14 +85,20 @@ config := scic.Config{
 | `QuartileMethod` | Default. Robust to outliers. |
 | `MedianSplitMethod` | Faster, less robust. |
 | `GradientMethod` | Smooth non-linear relationships. |
-| `PMIMethod` | Theoretical ideal (Definition 2.2). Uses full joint distribution. |
+| `PMIMethod` | Information-theoretic (Definition 2.2). Uses full joint distribution. |
 
 ## Interpreting Results
 
-**Directions** — sign and magnitude of causal influence:
-- `+0.95` — strong facilitative (X increases -> Y increases)
-- `-0.80` — strong inhibitory (X increases -> Y decreases)
-- `+0.10` — weak or no clear direction
+**Directions** — sign of directional association between X_i and Y:
+- `+1` — facilitative (X increases → Y tends to increase)
+- `-1` — inhibitory (X increases → Y tends to decrease)
+- `0` — no directional association, or estimation invalid (check `Validity`)
+
+Note: Direction measures **marginal association**, not causal direction.
+If X_i is correlated with Y through a confounder, Direction will be non-zero
+even if X_i has no unique causal effect (SURD Unique ≈ 0 in that case).
+The sign is reliable for monotonic relationships; magnitude depends on the
+method and is not calibrated across methods.
 
 **Conflict** — agreement between variable pairs:
 - `0.0` — same direction (both facilitative or both inhibitory)
@@ -123,3 +130,7 @@ Typical `numRegimes`: 2 for threshold detection, 3-4 for general exploration.
 
 - Exponential complexity in number of variables (`O(2^p)` from SURD)
 - Requires sufficient data per quartile (default: 5 samples minimum)
+- Direction is a marginal association measure, not a conditional/causal one
+- Bootstrap confidence assumes i.i.d. samples; for autocorrelated time series
+  (e.g., energy cascade), sign stability may be inflated — use with caution
+- Direction magnitude is not calibrated across methods (sign is reliable, scale is not)

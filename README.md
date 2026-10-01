@@ -198,7 +198,7 @@ func main() {
     }
 
     // Prepare with time lag for causal analysis
-    Y, err := matdata.PrepareWithLag(data, targetIdx=0, lag=10)
+    Y, err := matdata.PrepareWithLag(data, 0, 10)
     if err != nil {
         panic(err)
     }
@@ -328,11 +328,11 @@ SCIC™ algorithm validated on canonical systems and real-world datasets:
 
 SURD implementation validated against Python reference from [Nature Communications 2024](https://doi.org/10.1038/s41467-024-53373-4):
 
-| Dataset | Samples | Variables | Match | InfoLeak |
-|---------|---------|-----------|-------|----------|
-| Energy Cascade | 21,759 | 5 | ✅ 100% | < 0.01 |
-| Inner-Outer Flow | 2.4M | 2 | ✅ 100% | ~0.997 |
-| XOR (synthetic) | 10,000 | 3 | ✅ 100% | < 0.001 |
+| Dataset | Samples | Variables | Validation | InfoLeak |
+|---------|---------|-----------|------------|----------|
+| Energy Cascade | 21,759 | 5 | ✅ Matches Python to 4th decimal (0.1% tolerance) | < 0.12 |
+| Inner-Outer Flow | 2.4M | 2 | ✅ Qualitative sanity checks (no Python reference values) | ~0.997 |
+| XOR (synthetic) | 10,000 | 3 | ✅ Correct dominance pattern (synergy > 50%) | < 0.001 |
 
 Run validation tests:
 ```bash

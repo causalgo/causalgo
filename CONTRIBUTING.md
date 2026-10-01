@@ -333,7 +333,7 @@ causalgo/
 - Focus: Entropy calculations, mutual information, synergy detection
 - Dependencies: `internal/entropy`, `internal/histogram`
 
-**VarSelect (`internal/varselect/`)**:
+**VarSelect (`varselect/`)**:
 - LASSO-based variable selection
 - Focus: Regression, feature selection, causal ordering
 - Dependencies: `regression`, `github.com/causalgo/lasso`
@@ -341,7 +341,7 @@ causalgo/
 **Shared Infrastructure**:
 - `internal/entropy/`: Shannon entropy, conditional MI
 - `internal/histogram/`: N-dimensional binning with smoothing
-- `pkg/matdata/`: MATLAB v5/v7.3 (HDF5) file reading
+- `matdata/`: MATLAB v5/v7.3 (HDF5) file reading
 
 ---
 

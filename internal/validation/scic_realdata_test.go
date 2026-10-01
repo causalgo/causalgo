@@ -2,6 +2,7 @@ package validation
 
 import (
 	"math"
+	"strconv"
 	"testing"
 
 	"github.com/causalgo/causalgo/matdata"
@@ -481,12 +482,12 @@ func BenchmarkSCIC_EnergyCascade(b *testing.B) {
 
 // keyForVar returns the map key for a single variable.
 func keyForVar(idx int) string {
-	return string(rune('0' + idx))
+	return strconv.Itoa(idx)
 }
 
 // keyForPair returns the map key for a variable pair.
 func keyForPair(i, j int) string {
-	return string(rune('0'+i)) + "," + string(rune('0'+j))
+	return strconv.Itoa(i) + "," + strconv.Itoa(j)
 }
 
 // interpretDirection returns a human-readable interpretation of a direction value.

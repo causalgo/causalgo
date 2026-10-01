@@ -1,6 +1,7 @@
 package comparison
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/causalgo/causalgo/surd"
@@ -124,7 +125,7 @@ func BenchmarkScaling(b *testing.B) {
 	sizes := []int{100, 500, 1000, 2000}
 
 	for _, size := range sizes {
-		b.Run("VarSelect_n="+string(rune(size)), func(b *testing.B) {
+		b.Run("VarSelect_n="+strconv.Itoa(size), func(b *testing.B) {
 			data, _ := generateLinearChain(size, 42)
 
 			selector := varselect.New(varselect.Config{
@@ -144,7 +145,7 @@ func BenchmarkScaling(b *testing.B) {
 			}
 		})
 
-		b.Run("SURD_n="+string(rune(size)), func(b *testing.B) {
+		b.Run("SURD_n="+strconv.Itoa(size), func(b *testing.B) {
 			data, _ := generateLinearChain(size, 42)
 
 			// Convert to slice format
