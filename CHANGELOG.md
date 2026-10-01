@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.1] - 2026-10-01
+
+### Fixed
+- **SCIC PMI method**: edge bins now contribute to DIM (was losing `1-2/b` of signal)
+- **SCIC MAD=0 on discrete data**: robust stats fall back to mean/std when MAD is zero, instead of returning coin-flip ±1
+- **SCIC Valid flag**: `Result.Validity` map exposes `DirectionResult` per variable — distinguishes "no effect" from "could not estimate"
+- **API panics**: `DirectionProfile` no longer panics when `numRegimes > n`; `varselect.Fit` rejects NaN/Inf input; `NewNDHistogram` caps total bins at 100M to prevent OOM
+- **Regressor.Fit interface**: now returns `([]float64, error)` — **breaking change** for custom `Regressor` implementations; `ExternalLASSO.Fit` propagates errors instead of returning nil
+- **matdata test paths**: fixed `../../testdata/` → `../testdata/`; tests actually run (coverage 0% → 61.5%)
+- **Energy cascade tolerance**: tightened from 10% to 0.1% relative error
+- **CLI format auto-detect**: `--output x.svg` now writes SVG (was appending `.png`)
+- **Stale links**: fixed 6 broken references across SECURITY, CODEOWNERS, AUTHORS, visualization/README, CONTRIBUTING
+
+### Changed
+- **surd.go godoc**: translated all comments from Russian to English; fixed key format docs (1-based → 0-based)
+- **SCIC docs**: Direction renamed to "directional association" (not "causal direction"); Confidence renamed to "sign stability" (not "statistical confidence"); magnitude scale removed; bootstrap i.i.d. warning added
+- **Root package**: `main.go` → `cmd/example/main.go`; added `doc.go` with `package causalgo`
+- **CI**: golangci-lint pinned to v2.14.0 (was `latest`); `string(rune())` replaced with `strconv.Itoa`
+- **README validation**: replaced "✅ 100% match" with accurate descriptions per dataset
+- **testdata**: added `README.md` with data provenance and license notice
+
+### Removed
+- `scripts/pre-release-check.sh` (unused)
+
+---
+
 ## [0.6.0] - 2026-02-14
 
 ### Added
@@ -278,7 +304,8 @@ See [ROADMAP.md](ROADMAP.md) for future plans toward v1.0.0.
 
 ---
 
-[Unreleased]: https://github.com/causalgo/causalgo/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/causalgo/causalgo/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/causalgo/causalgo/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/causalgo/causalgo/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/causalgo/causalgo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/causalgo/causalgo/compare/v0.3.0...v0.4.0

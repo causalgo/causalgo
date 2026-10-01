@@ -163,11 +163,11 @@ func NewNDHistogram(data [][]float64, bins []int) (*NDHistogram, error) {
 
 			// Normalize to [0, 1] and scale to bin index
 			normalized := (val - minVals[j]) / (maxVals[j] - minVals[j])
-			binIdx := int(normalized * float64(bins[j]))
+			binIdx := int(normalized * float64(bins[j])) //nolint:gosec // G602: j bounded by len(sample)==nVars==len(bins)
 
 			// Handle edge case where value == maxVal
-			if binIdx >= bins[j] {
-				binIdx = bins[j] - 1
+			if binIdx >= bins[j] { //nolint:gosec // G602: same bounds
+				binIdx = bins[j] - 1 //nolint:gosec // G602: same bounds
 			}
 
 			binIndices[j] = binIdx
