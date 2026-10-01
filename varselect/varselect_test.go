@@ -281,6 +281,46 @@ func TestFit_AllRegressorsFail(t *testing.T) {
 	t.Logf("Got expected error: %v", err)
 }
 
+// TestFit_PartialRegressorFailure verifies warnings when some fits fail.
+func TestFit_PartialRegressorFailure(t *testing.T) {
+	data := mat.NewDense(20, 3, nil)
+	for i := 0; i < 20; i++ {
+		data.Set(i, 0, float64(i))
+		data.Set(i, 1, float64(i)*2+1)
+		data.Set(i, 2, float64(i)*0.5)
+	}
+
+	selector := New(Config{Workers: 1})
+	selector.SetRegressor(&PartialFailRegressor{failVar: 1})
+
+	result, err := selector.Fit(data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.Warnings) == 0 {
+		t.Error("expected warnings for partial regressor failure, got none")
+	}
+	for _, w := range result.Warnings {
+		t.Logf("Warning: %s", w)
+	}
+}
+
+// PartialFailRegressor fails only when the target variable matches failVar.
+type PartialFailRegressor struct {
+	failVar int
+	callNum int
+}
+
+func (p *PartialFailRegressor) Fit(x *mat.Dense, y []float64) ([]float64, error) {
+	p.callNum++
+	_, cols := x.Dims()
+	if p.callNum%3 == 0 {
+		return nil, fmt.Errorf("intentional partial failure")
+	}
+	return make([]float64, cols), nil
+}
+
 // FailingRegressor always returns an error.
 type FailingRegressor struct{}
 

@@ -39,6 +39,11 @@ type Result struct {
 
 	// Weights matrix: Weights[i][j] is the regression weight of variable j when predicting variable i.
 	Weights [][]float64
+
+	// Warnings lists non-fatal issues encountered during fitting (e.g., regressor
+	// failures on individual variables). The ordering is still produced, but may
+	// be unreliable for the affected variables.
+	Warnings []string
 }
 
 // Selector implements recursive variable selection for causal ordering
@@ -135,7 +140,8 @@ func (s *Selector) Fit(x *mat.Dense) (*Result, error) {
 		}
 
 		results := s.processVariables(stdX, remaining, n, p)
-		bestVar, bestMSE, bestWeights := findBestVariable(results)
+		bestVar, bestMSE, bestWeights, warnings := findBestVariable(results)
+		result.Warnings = append(result.Warnings, warnings...)
 		if bestVar < 0 {
 			return nil, fmt.Errorf("no valid variable found: all regressor fits failed")
 		}
@@ -307,7 +313,11 @@ func (s *Selector) fitVariable(stdX *mat.Dense, j int, remaining []bool) varResu
 
 	weights, err := s.regressor.Fit(xSub, y)
 	if err != nil || weights == nil {
-		return varResult{idx: j, mse: math.MaxFloat64}
+		return varResult{
+			idx:     j,
+			mse:     math.MaxFloat64,
+			warning: fmt.Sprintf("regressor fit failed for variable %d: %v", j, err),
+		}
 	}
 	residuals := s.calculateResiduals(xSub, y, weights)
 	mse := computeMSE(residuals)
@@ -319,19 +329,23 @@ func (s *Selector) fitVariable(stdX *mat.Dense, j int, remaining []bool) varResu
 	}
 }
 
-func findBestVariable(results chan varResult) (int, float64, []float64) {
+func findBestVariable(results chan varResult) (int, float64, []float64, []string) {
 	bestVar := -1
 	bestMSE := math.MaxFloat64
 	var bestWeights []float64
+	var warnings []string
 
 	for res := range results {
+		if res.warning != "" {
+			warnings = append(warnings, res.warning)
+		}
 		if res.mse < bestMSE {
 			bestMSE = res.mse
 			bestVar = res.idx
 			bestWeights = res.weights
 		}
 	}
-	return bestVar, bestMSE, bestWeights
+	return bestVar, bestMSE, bestWeights, warnings
 }
 
 func (s *Selector) updateResults(result *Result, bestVar int, bestMSE float64,
@@ -371,4 +385,5 @@ type varResult struct {
 	idx     int
 	mse     float64
 	weights []float64
+	warning string
 }
