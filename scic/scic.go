@@ -79,11 +79,12 @@ type Result struct {
 	// These magnitudes are always non-negative and mathematically valid.
 	SURD *surd.Result
 
-	// Directions maps variable keys to their directional influence [-1, +1].
+	// Directions maps variable keys to their directional association [-1, +1].
 	// Key format: "0" for single variable, "0,1" for combinations.
-	// +1 = purely facilitative (source increase -> target increase)
-	// -1 = purely inhibitory (source increase -> target decrease)
-	// 0 = mixed or no directional effect
+	// +1 = facilitative (source increase associated with target increase)
+	// -1 = inhibitory (source increase associated with target decrease)
+	// 0 = no directional association, or estimation invalid (check Validity)
+	// Note: this is a marginal association, not a causal direction estimate.
 	Directions map[string]float64
 
 	// Conflicts maps variable pair keys to their conflict index [0, 1].
@@ -92,9 +93,16 @@ type Result struct {
 	// 1 = maximum conflict (opposite directions of equal magnitude)
 	Conflicts map[string]float64
 
-	// Confidence maps variable keys to statistical confidence [0, 1].
-	// Only populated if BootstrapN > 0 in config.
+	// Confidence maps variable keys to bootstrap sign stability [0, 1].
+	// Measures the proportion of bootstrap resamples where the direction sign
+	// agrees with the original estimate. This is NOT a p-value or statistical
+	// significance measure. Only populated if BootstrapN > 0 in config.
+	// Note: assumes i.i.d. samples; unreliable for autocorrelated time series.
 	Confidence map[string]float64
+
+	// Validity maps variable keys to the full DirectionResult including Valid flag and Reason.
+	// Use this to distinguish "direction is zero" from "direction could not be estimated".
+	Validity map[string]DirectionResult
 
 	// NumVariables is the number of source variables analyzed.
 	NumVariables int
@@ -158,13 +166,15 @@ func Decompose(Y []float64, X [][]float64, config Config) (*Result, error) { //n
 
 	// Step 2: Compute directions for each source variable
 	directions := make(map[string]float64)
+	validity := make(map[string]DirectionResult)
 	for i := 0; i < p; i++ {
 		key := fmt.Sprintf("%d", i)
 		dirResult := ComputeDirection(Y, X[i], config.DirectionMethod, config) //nolint:gosec // G602: i is bounded by p=len(X)
+		validity[key] = dirResult
 		if dirResult.Valid {
 			directions[key] = dirResult.Direction
 		} else {
-			directions[key] = 0 // Default to no effect if invalid
+			directions[key] = 0
 		}
 	}
 
@@ -199,6 +209,7 @@ func Decompose(Y []float64, X [][]float64, config Config) (*Result, error) { //n
 		Directions:   directions,
 		Conflicts:    conflicts,
 		Confidence:   confidence,
+		Validity:     validity,
 		NumVariables: p,
 	}, nil
 }
@@ -280,16 +291,21 @@ func computeQuartileDirection(Y, X []float64, config Config) DirectionResult { /
 		sigmaHigh = stddev(yHigh)
 	}
 
-	// Handle degenerate case
+	// Fallback: if robust dispersion is zero (discrete/binary data), use mean/std
 	sigmaCombined := sigmaLow + sigmaHigh
+	if sigmaCombined < 1e-10 && config.RobustStats {
+		muLow = mean(yLow)
+		muHigh = mean(yHigh)
+		sigmaLow = stddev(yLow)
+		sigmaHigh = stddev(yHigh)
+		sigmaCombined = sigmaLow + sigmaHigh
+	}
+
 	if sigmaCombined < 1e-10 {
-		// Both quartiles have zero variance - check if means differ
-		if muHigh > muLow {
-			return DirectionResult{Direction: 1.0, Valid: true}
-		} else if muHigh < muLow {
-			return DirectionResult{Direction: -1.0, Valid: true}
+		return DirectionResult{
+			Valid:  false,
+			Reason: "zero dispersion in both quartiles (constant or near-constant data)",
 		}
-		return DirectionResult{Direction: 0.0, Valid: true}
 	}
 
 	// Compute normalized direction
@@ -340,13 +356,19 @@ func computeMedianSplitDirection(Y, X []float64, config Config) DirectionResult 
 	}
 
 	sigmaCombined := sigmaLow + sigmaHigh
+	if sigmaCombined < 1e-10 && config.RobustStats {
+		muLow = mean(yLow)
+		muHigh = mean(yHigh)
+		sigmaLow = stddev(yLow)
+		sigmaHigh = stddev(yHigh)
+		sigmaCombined = sigmaLow + sigmaHigh
+	}
+
 	if sigmaCombined < 1e-10 {
-		if muHigh > muLow {
-			return DirectionResult{Direction: 1.0, Valid: true}
-		} else if muHigh < muLow {
-			return DirectionResult{Direction: -1.0, Valid: true}
+		return DirectionResult{
+			Valid:  false,
+			Reason: "zero dispersion in both split groups (constant or near-constant data)",
 		}
-		return DirectionResult{Direction: 0.0, Valid: true}
 	}
 
 	direction := (muHigh - muLow) / sigmaCombined
@@ -443,17 +465,18 @@ func computePMIDirection(Y, X []float64, config Config) DirectionResult { //noli
 		}
 	}
 
-	// Compute sign(δ_Y(x_j)) for each X bin
-	// δ_Y(x_j) = E[Y | X > x_j] - E[Y | X < x_j]
+	// Compute sign(δ_Y(x_j)) for each X bin.
+	// δ_Y(x_j) = E[Y|X≥x_j] − E[Y|X≤x_j] with inclusive boundaries so that
+	// edge bins (j=0 and j=b-1) always have both terms defined.
 	deltaSign := make([]float64, bins)
 	for j := 0; j < bins; j++ {
 		sumAbove, wAbove := 0.0, 0.0
-		for m := j + 1; m < bins; m++ {
+		for m := j; m < bins; m++ {
 			sumAbove += pX[m] * condMeanY[m]
 			wAbove += pX[m]
 		}
 		sumBelow, wBelow := 0.0, 0.0
-		for m := 0; m < j; m++ {
+		for m := 0; m <= j; m++ {
 			sumBelow += pX[m] * condMeanY[m]
 			wBelow += pX[m]
 		}
