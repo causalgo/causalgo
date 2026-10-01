@@ -7,7 +7,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/causalgo/causalgo.svg)](https://pkg.go.dev/github.com/causalgo/causalgo)
 [![GitHub Actions](https://img.shields.io/github/actions/workflow/status/causalgo/causalgo/go.yml?branch=main&style=flat-square&logo=github-actions&label=CI)](https://github.com/causalgo/causalgo/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/causalgo/causalgo?style=flat-square)](https://goreportcard.com/report/github.com/causalgo/causalgo)
-[![codecov](https://img.shields.io/codecov/c/github/causalgo/causalgo?style=flat-square&logo=codecov)](https://codecov.io/gh/causalgo/causalgo)
+[![codecov](https://img.shields.io/codecov/c/github/causalgo/causalgo?style=flat-square&logo=codecov)](https://app.codecov.io/gh/causalgo/causalgo)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/causalgo/causalgo?style=flat-square&logo=github)](https://github.com/causalgo/causalgo/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/causalgo/causalgo?style=flat-square&logo=github)](https://github.com/causalgo/causalgo/issues)

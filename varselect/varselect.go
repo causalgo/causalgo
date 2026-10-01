@@ -131,6 +131,8 @@ func (s *Selector) Fit(x *mat.Dense) (*Result, error) {
 		remaining[i] = true
 	}
 
+	warnedVars := make(map[int]bool)
+
 	for len(result.Order) < p {
 		activeCount := countActive(remaining)
 
@@ -141,7 +143,12 @@ func (s *Selector) Fit(x *mat.Dense) (*Result, error) {
 
 		results := s.processVariables(stdX, remaining, n, p)
 		bestVar, bestMSE, bestWeights, warnings := findBestVariable(results)
-		result.Warnings = append(result.Warnings, warnings...)
+		for _, w := range warnings {
+			if !warnedVars[w.idx] {
+				warnedVars[w.idx] = true
+				result.Warnings = append(result.Warnings, w.msg)
+			}
+		}
 		if bestVar < 0 {
 			return nil, fmt.Errorf("no valid variable found: all regressor fits failed")
 		}
@@ -329,15 +336,15 @@ func (s *Selector) fitVariable(stdX *mat.Dense, j int, remaining []bool) varResu
 	}
 }
 
-func findBestVariable(results chan varResult) (int, float64, []float64, []string) {
+func findBestVariable(results chan varResult) (int, float64, []float64, []fitWarning) {
 	bestVar := -1
 	bestMSE := math.MaxFloat64
 	var bestWeights []float64
-	var warnings []string
+	var warnings []fitWarning
 
 	for res := range results {
 		if res.warning != "" {
-			warnings = append(warnings, res.warning)
+			warnings = append(warnings, fitWarning{idx: res.idx, msg: res.warning})
 		}
 		if res.mse < bestMSE {
 			bestMSE = res.mse
@@ -386,4 +393,9 @@ type varResult struct {
 	mse     float64
 	weights []float64
 	warning string
+}
+
+type fitWarning struct {
+	idx int
+	msg string
 }

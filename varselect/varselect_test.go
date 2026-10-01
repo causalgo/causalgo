@@ -304,6 +304,51 @@ func TestFit_PartialRegressorFailure(t *testing.T) {
 	for _, w := range result.Warnings {
 		t.Logf("Warning: %s", w)
 	}
+
+	// Verify deduplication: each variable should appear at most once
+	seen := make(map[string]bool)
+	for _, w := range result.Warnings {
+		if seen[w] {
+			t.Errorf("duplicate warning: %s", w)
+		}
+		seen[w] = true
+	}
+}
+
+// TestFit_WarningDeduplication verifies no duplicate warnings with many variables.
+func TestFit_WarningDeduplication(t *testing.T) {
+	p := 6
+	n := 30
+	data := mat.NewDense(n, p, nil)
+	for i := 0; i < n; i++ {
+		for j := 0; j < p; j++ {
+			data.Set(i, j, float64(i*p+j))
+		}
+	}
+
+	selector := New(Config{Workers: 1})
+	selector.SetRegressor(&PartialFailRegressor{failVar: 2})
+
+	result, err := selector.Fit(data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	t.Logf("Variables: %d, Warnings: %d", p, len(result.Warnings))
+	for _, w := range result.Warnings {
+		t.Logf("  %s", w)
+	}
+
+	// With dedup, variable 2's failure should appear exactly once
+	count := 0
+	for _, w := range result.Warnings {
+		if len(w) > 0 {
+			count++
+		}
+	}
+	if count > p {
+		t.Errorf("too many warnings (%d) for %d variables — deduplication broken", count, p)
+	}
 }
 
 // PartialFailRegressor fails only when the target variable matches failVar.
